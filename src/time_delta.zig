@@ -96,8 +96,8 @@ pub const  TimeDelta = struct {
     }
 
 
-    pub fn try_seconds(seconds: i64) ?TimeDelta {
-        return TimeDelta.new(seconds, 0);
+    pub fn try_seconds(_seconds: i64) ?TimeDelta {
+        return TimeDelta.new(_seconds, 0);
     }
 
     pub fn weeks(_weeks: i64) TimeDelta {
@@ -165,21 +165,21 @@ pub const  TimeDelta = struct {
     }
 
 
-    pub  fn try_milliseconds(milliseconds: i64) ?TimeDelta {
+    pub  fn try_milliseconds(_milliseconds: i64) ?TimeDelta {
         // We don't need to compare against MAX, as this function accepts an
         // i64, and MAX is aligned to i64::MAX milliseconds.
-        if (milliseconds < - i64_max) {
+        if (_milliseconds < - i64_max) {
             return null;
         }
-        var secs, millis = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
+        const secs, const millis = div_mod_floor_64(_milliseconds, MILLIS_PER_SEC);
         return TimeDelta {
             .secs = secs, .nanos = millis * NANOS_PER_MILLI };
     }
 
 
-    pub fn microseconds(microseconds: i64) TimeDelta {
-        var secs, micros = div_mod_floor_64(microseconds, MICROS_PER_SEC);
-        var nanos = micros * NANOS_PER_MICRO;
+    pub fn microseconds(_microseconds: i64) TimeDelta {
+        const secs, const micros = div_mod_floor_64(_microseconds, MICROS_PER_SEC);
+        const nanos = micros * NANOS_PER_MICRO;
         return TimeDelta { .secs = secs, .nanos = nanos };
     }
 
@@ -190,7 +190,7 @@ pub const  TimeDelta = struct {
     // not possible to specify a value that would be out of bounds. This
     // function is therefore infallible.
     pub  fn nanoseconds(nanos: i64) TimeDelta {
-        var secs, nanos = div_mod_floor_64(nanos, NANOS_PER_SEC);
+        const secs, nanos = div_mod_floor_64(nanos, NANOS_PER_SEC);
         return TimeDelta {
             .secs = secs,
             .nanos = nanos,
@@ -246,8 +246,8 @@ pub const  TimeDelta = struct {
         // A proper TimeDelta will not overflow, because MIN and MAX are defined such
         // that the range is within the bounds of an i64, from -i64::MAX through to
         // +i64::MAX inclusive. Notably, i64::MIN is excluded from this range.
-        var secs_part = self.num_seconds() * MILLIS_PER_SEC;
-        var nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
+        const secs_part = self.num_seconds() * MILLIS_PER_SEC;
+        const nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
         return secs_part + nanos_part;
     }
 
@@ -263,8 +263,8 @@ pub const  TimeDelta = struct {
     /// Returns the total number of whole microseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub fn num_microseconds(self: Self) !i64 {
-        var secs_part = try std.math.mul(i64,  self.num_seconds(), MICROS_PER_SEC);
-        var nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
+        const secs_part = try std.math.mul(i64,  self.num_seconds(), MICROS_PER_SEC);
+        const nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
         return try std.math.add(i64, secs_part, nanos_part);
     }
 
@@ -280,8 +280,8 @@ pub const  TimeDelta = struct {
     /// Returns the total number of whole nanoseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
     pub fn num_nanoseconds(self: Self) !i64 {
-        var secs_part = try std.math.mul(i64, self.num_seconds(), NANOS_PER_SEC);
-        var nanos_part = self.subsec_nanos();
+        const secs_part = try std.math.mul(i64, self.num_seconds(), NANOS_PER_SEC);
+        const nanos_part = self.subsec_nanos();
         return try std.math.add(i64, secs_part, nanos_part);
     }
 

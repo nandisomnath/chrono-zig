@@ -1,47 +1,40 @@
-// This is a part of Chrono.
-// See README.md and LICENSE.txt for details.
+// #[cfg(feature = "alloc")]
+// use core::borrow::Borrow;
+// use core::iter::FusedIterator;
+// use core::num::NonZeroI32;
+// use core::ops::{Add, AddAssign, Sub, SubAssign};
+// use core::{fmt, str};
 
-//! ISO 8601 calendar date without timezone.
-//!
-//! The implementation is optimized for determining year, month, day and day of week.
-//!
-//! Format of `NaiveDate`:
-//! `YYYY_YYYY_YYYY_YYYY_YYYO_OOOO_OOOO_LWWW`
-//! `Y`: Year
-//! `O`: Ordinal
-//! `L`: leap year flag (1 = common year, 0 is leap year)
-//! `W`: weekday before the first day of the year
-//! `LWWW`: will also be referred to as the year flags (`F`)
+// #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+// use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(feature = "alloc")]
-use core::borrow::Borrow;
-use core::iter::FusedIterator;
-use core::num::NonZeroI32;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::{fmt, str};
+// /// L10n locales.
+// #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+// use pure_rust_locales::Locale;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
-use rkyv::{Archive, Deserialize, Serialize};
+// #[cfg(feature = "alloc")]
+// use crate::format::DelayedFormat;
+// use crate::format::{
+//     Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder,
+//     write_hundreds,
+// };
+// use crate::month::Months;
+// use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
+// use crate::{Datelike, TimeDelta, Weekday};
+// use crate::{expect, try_opt};
 
-/// L10n locales.
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-use pure_rust_locales::Locale;
+// use super::internals::{Mdf, YearFlags};
 
-#[cfg(feature = "alloc")]
-use crate::format::DelayedFormat;
-use crate::format::{
-    Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder,
-    write_hundreds,
-};
-use crate::month::Months;
-use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{Datelike, TimeDelta, Weekday};
-use crate::{expect, try_opt};
+// #[cfg(test)]
+// mod tests;
 
-use super::internals::{Mdf, YearFlags};
 
-#[cfg(test)]
-mod tests;
+// the zig support for max 
+const std = @import("std");
+const i32_max = std.math.maxInt(i32);
+const i32_min = std.math.minInt(i32);
+
+
 
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date] from Jan 1, 262145 BCE to Dec 31, 262143 CE.
@@ -91,60 +84,45 @@ mod tests;
 /// This is currently the internal format of Chrono's date types.
 ///
 /// [proleptic Gregorian date]: crate::NaiveDate#calendar-date
-#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
-pub struct NaiveDate {
-    yof: NonZeroI32, // (year << 13) | of
-}
+pub const NaiveDate = struct {
 
-/// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-#[deprecated(since = "0.4.20", note = "Use NaiveDate::MIN instead")]
-pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
-/// The maximum possible `NaiveDate` (December 31, 262143 CE).
-#[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
-pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
+    // NonZeroI32
+    yof: i32, // (year << 13) | of
+    const Self = @This();
 
-#[cfg(all(feature = "arbitrary", feature = "std"))]
-impl arbitrary::Arbitrary<'_> for NaiveDate {
-    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
-        let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
-        let max_days = YearFlags::from_year(year).ndays();
-        let ord = u.int_in_range(1..=max_days)?;
-        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
-    }
-}
-
-impl NaiveDate {
-    pub(crate) fn weeks_from(&self, day: Weekday) -> i32 {
-        (self.ordinal() as i32 - self.weekday().days_since(day) as i32 + 6) / 7
+    pub fn weeks_from(self: Self, day: Weekday) i32 {
+        return self.ordinal() - self.weekday().days_since(day) + 6 / 7;
     }
 
-    /// Makes a new `NaiveDate` from year, ordinal and flags.
-    /// Does not check whether the flags are correct for the provided year.
-    const fn from_ordinal_and_flags(
+    fn from_ordinal_and_flags(
         year: i32,
         ordinal: u32,
         flags: YearFlags,
-    ) -> Option<NaiveDate> {
-        if year < MIN_YEAR || year > MAX_YEAR {
-            return None; // Out-of-range
+    ) ?NaiveDate {
+        if (year < MIN_YEAR or year > MAX_YEAR) {
+            return null; // Out-of-range
         }
-        if ordinal == 0 || ordinal > 366 {
-            return None; // Invalid
+        if (ordinal == 0 or ordinal > 366) {
+            return null; // Invalid
         }
-        debug_assert!(YearFlags::from_year(year).0 == flags.0);
-        let yof = (year << 13) | (ordinal << 4) as i32 | flags.0 as i32;
-        match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate::from_yof(yof)),
-            false => None, // Does not exist: Ordinal 366 in a common year.
-        }
+        std.debug.assert(YearFlags::from_year(year).0 == flags.0);
+        // const yof = (year << 13) | (ordinal << 4) | flags.0;
+        // match yof & OL_MASK <= MAX_OL {
+        //     true => Some(NaiveDate::from_yof(yof)),
+        //     false => None, // Does not exist: Ordinal 366 in a common year.
+        // }
     }
+
+};
+
+
+
+impl NaiveDate {
+    
+
+    /// Makes a new `NaiveDate` from year, ordinal and flags.
+    /// Does not check whether the flags are correct for the provided year.
+    
 
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
@@ -2319,36 +2297,40 @@ impl Default for NaiveDate {
     }
 }
 
-const fn cycle_to_yo(cycle: u32) -> (u32, u32) {
-    let mut year_mod_400 = cycle / 365;
-    let mut ordinal0 = cycle % 365;
-    let delta = YEAR_DELTAS[year_mod_400 as usize] as u32;
-    if ordinal0 < delta {
+fn cycle_to_yo(cycle: u32) struct {u32, u32} {
+    var year_mod_400 = cycle / 365;
+    var ordinal0 = cycle % 365;
+    var delta = YEAR_DELTAS[year_mod_400];
+    if (ordinal0 < delta) {
         year_mod_400 -= 1;
-        ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as usize] as u32;
+        ordinal0 += 365 - YEAR_DELTAS[year_mod_400];
     } else {
         ordinal0 -= delta;
     }
-    (year_mod_400, ordinal0 + 1)
+    return {year_mod_400, ordinal0 + 1};
 }
 
-const fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
-    year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as usize] as u32 + ordinal - 1
+fn yo_to_cycle(year_mod_400: u32, ordinal: u32) u32 {
+    return year_mod_400 * 365 + YEAR_DELTAS[year_mod_400] + ordinal - 1;
 }
 
-const fn div_mod_floor(val: i32, div: i32) -> (i32, i32) {
-    (val.div_euclid(div), val.rem_euclid(div))
+
+fn div_mod_floor(this: i32, other: i32) struct {i32, i32} {
+    const div_euclid = try std.math.divFloor(i32, this, other);
+    const m = try std.math.mul(i32, div_euclid, other);
+    const rem_euclid = this - m;
+    return .{div_euclid, rem_euclid};
 }
 
 /// MAX_YEAR is one year less than the type is capable of representing. Internally we may sometimes
 /// use the headroom, notably to handle cases where the offset of a `DateTime` constructed with
 /// `NaiveDate::MAX` pushes it beyond the valid, representable range.
-pub(super) const MAX_YEAR: i32 = (i32::MAX >> 13) - 1;
+pub const MAX_YEAR: i32 = (i32::MAX >> 13) - 1;
 
 /// MIN_YEAR is one year more than the type is capable of representing. Internally we may sometimes
 /// use the headroom, notably to handle cases where the offset of a `DateTime` constructed with
 /// `NaiveDate::MIN` pushes it beyond the valid, representable range.
-pub(super) const MIN_YEAR: i32 = (i32::MIN >> 13) + 1;
+pub const MIN_YEAR: i32 = (i32::MIN >> 13) + 1;
 
 const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
 
@@ -2367,7 +2349,7 @@ const WEEKDAY_FLAGS_MASK: i32 = 0b111;
 
 const YEAR_FLAGS_MASK: i32 = LEAP_YEAR_MASK | WEEKDAY_FLAGS_MASK;
 
-const YEAR_DELTAS: &[u8; 401] = &[
+const YEAR_DELTAS = [_]i32{
     0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8,
     8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14,
     15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20,
@@ -2387,148 +2369,4 @@ const YEAR_DELTAS: &[u8; 401] = &[
     84, 85, 85, 85, 85, 86, 86, 86, 86, 87, 87, 87, 87, 88, 88, 88, 88, 89, 89, 89, 89, 90, 90, 90,
     90, 91, 91, 91, 91, 92, 92, 92, 92, 93, 93, 93, 93, 94, 94, 94, 94, 95, 95, 95, 95, 96, 96, 96,
     96, 97, 97, 97, 97, // 400+1
-];
-
-#[cfg(feature = "serde")]
-mod serde {
-    use super::NaiveDate;
-    use core::fmt;
-    use serde::{de, ser};
-
-    // TODO not very optimized for space (binary formats would want something better)
-
-    impl ser::Serialize for NaiveDate {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            struct FormatWrapped<'a, D: 'a> {
-                inner: &'a D,
-            }
-
-            impl<D: fmt::Debug> fmt::Display for FormatWrapped<'_, D> {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                    self.inner.fmt(f)
-                }
-            }
-
-            serializer.collect_str(&FormatWrapped { inner: &self })
-        }
-    }
-
-    struct NaiveDateVisitor;
-
-    impl de::Visitor<'_> for NaiveDateVisitor {
-        type Value = NaiveDate;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a formatted date string")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            value.parse().map_err(E::custom)
-        }
-    }
-
-    impl<'de> de::Deserialize<'de> for NaiveDate {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            deserializer.deserialize_str(NaiveDateVisitor)
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use crate::NaiveDate;
-
-        #[test]
-        fn test_serde_serialize() {
-            assert_eq!(
-                serde_json::to_string(&NaiveDate::from_ymd_opt(2014, 7, 24).unwrap()).ok(),
-                Some(r#""2014-07-24""#.into())
-            );
-            assert_eq!(
-                serde_json::to_string(&NaiveDate::from_ymd_opt(0, 1, 1).unwrap()).ok(),
-                Some(r#""0000-01-01""#.into())
-            );
-            assert_eq!(
-                serde_json::to_string(&NaiveDate::from_ymd_opt(-1, 12, 31).unwrap()).ok(),
-                Some(r#""-0001-12-31""#.into())
-            );
-            assert_eq!(
-                serde_json::to_string(&NaiveDate::MIN).ok(),
-                Some(r#""-262143-01-01""#.into())
-            );
-            assert_eq!(
-                serde_json::to_string(&NaiveDate::MAX).ok(),
-                Some(r#""+262142-12-31""#.into())
-            );
-        }
-
-        #[test]
-        fn test_serde_deserialize() {
-            let from_str = serde_json::from_str::<NaiveDate>;
-
-            assert_eq!(
-                from_str(r#""2016-07-08""#).ok(),
-                Some(NaiveDate::from_ymd_opt(2016, 7, 8).unwrap())
-            );
-            assert_eq!(
-                from_str(r#""2016-7-8""#).ok(),
-                Some(NaiveDate::from_ymd_opt(2016, 7, 8).unwrap())
-            );
-            assert_eq!(from_str(r#""+002016-07-08""#).ok(), NaiveDate::from_ymd_opt(2016, 7, 8));
-            assert_eq!(
-                from_str(r#""0000-01-01""#).ok(),
-                Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap())
-            );
-            assert_eq!(
-                from_str(r#""0-1-1""#).ok(),
-                Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap())
-            );
-            assert_eq!(
-                from_str(r#""-0001-12-31""#).ok(),
-                Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap())
-            );
-            assert_eq!(from_str(r#""-262143-01-01""#).ok(), Some(NaiveDate::MIN));
-            assert_eq!(from_str(r#""+262142-12-31""#).ok(), Some(NaiveDate::MAX));
-
-            // bad formats
-            assert!(from_str(r#""""#).is_err());
-            assert!(from_str(r#""20001231""#).is_err());
-            assert!(from_str(r#""2000-00-00""#).is_err());
-            assert!(from_str(r#""2000-02-30""#).is_err());
-            assert!(from_str(r#""2001-02-29""#).is_err());
-            assert!(from_str(r#""2002-002-28""#).is_err());
-            assert!(from_str(r#""yyyy-mm-dd""#).is_err());
-            assert!(from_str(r#"0"#).is_err());
-            assert!(from_str(r#"20.01"#).is_err());
-            let min = i32::MIN.to_string();
-            assert!(from_str(&min).is_err());
-            let max = i32::MAX.to_string();
-            assert!(from_str(&max).is_err());
-            let min = i64::MIN.to_string();
-            assert!(from_str(&min).is_err());
-            let max = i64::MAX.to_string();
-            assert!(from_str(&max).is_err());
-            assert!(from_str(r#"{}"#).is_err());
-        }
-
-        #[test]
-        fn test_serde_bincode() {
-            // Bincode is relevant to test separately from JSON because
-            // it is not self-describing.
-            use bincode::{deserialize, serialize};
-
-            let d = NaiveDate::from_ymd_opt(2014, 7, 24).unwrap();
-            let encoded = serialize(&d).unwrap();
-            let decoded: NaiveDate = deserialize(&encoded).unwrap();
-            assert_eq!(d, decoded);
-        }
-    }
-}
+};

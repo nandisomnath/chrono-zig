@@ -1,8 +1,4 @@
-//! Internal helper types for working with dates.
 
-#![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
-
-use core::fmt;
 
 /// Year flags (aka the dominical letter).
 ///
@@ -14,9 +10,59 @@ use core::fmt;
 /// The `YearFlags` stores this information into 4 bits `LWWW`. `L` is the leap year flag, with `1`
 /// for the common year (this simplifies validating an ordinal in `NaiveDate`). `WWW` is a non-zero
 /// `Weekday` of the last day in the preceding year.
-#[allow(unreachable_pub)] // public as an alias for benchmarks only
-#[derive(PartialEq, Eq, Copy, Clone, Hash)]
-pub struct YearFlags(pub(super) u8);
+
+// pub struct YearFlags(pub(super) u8);
+pub const YearFlags = struct {
+    value: u8,
+    const Self = @This();
+    pub fn new(value: u8) YearFlags {
+        return YearFlags {
+            .value = value,
+        };
+    }
+
+    pub fn set(self: *Self, value: u8) void {
+        self.value = value;
+    }
+
+    pub fn get(self: Self) u8 {
+        return self.value;
+    }
+
+
+
+    pub fn from_year(year: i32) YearFlags {
+        var year = rem_euclid(year, 400);
+        return YearFlags.from_year_mod_400(year);
+    }
+
+
+    pub  fn from_year_mod_400(year: i32) YearFlags {
+        return YEAR_TO_FLAGS[year];
+    }
+
+
+    pub fn ndays(self: Self) u32 {
+        return 366 - (self.value >> 3);
+    }
+
+ 
+    pub fn isoweek_delta(self: Self) u32 {
+        // let YearFlags(flags) = *self;
+        var delta = self.value & 0b0111;
+        if (delta < 3) {
+            delta += 7;
+        }
+        return delta;
+    }
+
+
+    pub fn nisoweeks(self: Self) u32 {
+        // let YearFlags(flags) = *self;
+        return 52 + ((0b0000_0100_0000_0110 >> self.value) & 1);
+    }
+
+};
 
 // Weekday of the last day in the preceding year.
 // Allows for quick day of week calculation from the 1-based ordinal.
@@ -31,22 +77,22 @@ const YEAR_STARTS_AFTER_SUNDAY: u8 = 6;
 const COMMON_YEAR: u8 = 1 << 3;
 const LEAP_YEAR: u8 = 0 << 3;
 
-pub(super) const A: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
-pub(super) const AG: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
-pub(super) const B: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
-pub(super) const BA: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
-pub(super) const C: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
-pub(super) const CB: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
-pub(super) const D: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
-pub(super) const DC: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
-pub(super) const E: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THUESDAY);
-pub(super) const ED: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THUESDAY);
-pub(super) const F: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
-pub(super) const FE: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
-pub(super) const G: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
-pub(super) const GF: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub const A = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub const AG = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub const B = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub const BA = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub const C = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub const CB = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub const D = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub const DC = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub const E = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub const ED = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub const F = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub const FE = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub const G = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub const GF = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
 
-const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
+const YEAR_TO_FLAGS = [_]YearFlags{
     BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
     G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G,
     F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F,
@@ -63,70 +109,40 @@ const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
     F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F,
     E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E,
     D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
-];
+};
 
-impl YearFlags {
-    #[allow(unreachable_pub)] // public as an alias for benchmarks only
-    #[doc(hidden)] // for benchmarks only
-    #[inline]
-    #[must_use]
-    pub const fn from_year(year: i32) -> YearFlags {
-        let year = year.rem_euclid(400);
-        YearFlags::from_year_mod_400(year)
-    }
-
-    #[inline]
-    pub(super) const fn from_year_mod_400(year: i32) -> YearFlags {
-        YEAR_TO_FLAGS[year as usize]
-    }
-
-    #[inline]
-    pub(super) const fn ndays(&self) -> u32 {
-        let YearFlags(flags) = *self;
-        366 - (flags >> 3) as u32
-    }
-
-    #[inline]
-    pub(super) const fn isoweek_delta(&self) -> u32 {
-        let YearFlags(flags) = *self;
-        let mut delta = (flags & 0b0111) as u32;
-        if delta < 3 {
-            delta += 7;
-        }
-        delta
-    }
-
-    #[inline]
-    pub(super) const fn nisoweeks(&self) -> u32 {
-        let YearFlags(flags) = *self;
-        52 + ((0b0000_0100_0000_0110 >> flags as usize) & 1)
-    }
+fn rem_euclid(this: i32, other: i32) i32 {
+    const div_euclid = try std.math.divFloor(i32, this, other);
+    const m = try std.math.mul(i32, div_euclid, other);
+    const _rem_euclid = this - m;
+    return _rem_euclid;
 }
 
-impl fmt::Debug for YearFlags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let YearFlags(flags) = *self;
-        match flags {
-            0o15 => "A".fmt(f),
-            0o05 => "AG".fmt(f),
-            0o14 => "B".fmt(f),
-            0o04 => "BA".fmt(f),
-            0o13 => "C".fmt(f),
-            0o03 => "CB".fmt(f),
-            0o12 => "D".fmt(f),
-            0o02 => "DC".fmt(f),
-            0o11 => "E".fmt(f),
-            0o01 => "ED".fmt(f),
-            0o10 => "F?".fmt(f),
-            0o00 => "FE?".fmt(f), // non-canonical
-            0o17 => "F".fmt(f),
-            0o07 => "FE".fmt(f),
-            0o16 => "G".fmt(f),
-            0o06 => "GF".fmt(f),
-            _ => write!(f, "YearFlags({})", flags),
-        }
-    }
-}
+
+// impl fmt::Debug for YearFlags {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         let YearFlags(flags) = *self;
+//         match flags {
+//             0o15 => "A".fmt(f),
+//             0o05 => "AG".fmt(f),
+//             0o14 => "B".fmt(f),
+//             0o04 => "BA".fmt(f),
+//             0o13 => "C".fmt(f),
+//             0o03 => "CB".fmt(f),
+//             0o12 => "D".fmt(f),
+//             0o02 => "DC".fmt(f),
+//             0o11 => "E".fmt(f),
+//             0o01 => "ED".fmt(f),
+//             0o10 => "F?".fmt(f),
+//             0o00 => "FE?".fmt(f), // non-canonical
+//             0o17 => "F".fmt(f),
+//             0o07 => "FE".fmt(f),
+//             0o16 => "G".fmt(f),
+//             0o06 => "GF".fmt(f),
+//             _ => write!(f, "YearFlags({})", flags),
+//         }
+//     }
+// }
 
 // OL: (ordinal << 1) | leap year flag
 const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
@@ -136,7 +152,7 @@ const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 // ordinal-leapyear. OL = MDL - adjustment.
 // Dates that do not exist are encoded as `XX`.
 const XX: i8 = 0;
-const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
+const MDL_TO_OL = [_]i8{
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, // 0
@@ -177,9 +193,9 @@ const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
     100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
     98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
     100, // 12
-];
+};
 
-const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
+const OL_TO_MDL= [_]u8{
     0, 0, // 0
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -218,7 +234,7 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
     98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
     100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
     98, // 12
-];
+};
 
 /// Month, day of month and year flags: `(month << 9) | (day << 4) | flags`
 /// `M_MMMD_DDDD_LFFF`
@@ -233,10 +249,24 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 /// The methods of `Mdf` validate their inputs as late as possible. Dates that can't exist, like
 /// February 30, can still be represented. This allows the validation to be combined with the final
 /// table lookup, which is good for performance.
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
-pub(super) struct Mdf(u32);
+pub const Mdf = struct {
+    value: u32,
+    const Self = @This();
+    pub fn new_value(value: u32) Mdf {
+        return YearFlags {
+            .value = value,
+        };
+    }
 
-impl Mdf {
+    pub fn set(self: *Self, value: u32) void {
+        self.value = value;
+    }
+
+    pub fn get(self: Self) u32 {
+        return self.value;
+    }
+
+
     /// Makes a new `Mdf` value from month, day and `YearFlags`.
     ///
     /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
@@ -245,30 +275,27 @@ impl Mdf {
     /// # Errors
     ///
     /// Returns `None` if `month > 12` or `day > 31`.
-    #[inline]
-    pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
-        match month <= 12 && day <= 31 {
-            true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
-            false => None,
-        }
+    pub fn new(month: u32, day: u32, yearFlags: YearFlags) ?Mdf {
+        const value = switch (month <= 12 and day <= 31) {
+            true => Mdf.new_value((month << 9) | (day << 4) | yearFlags.get()),
+            false => null,
+        };
+        return value;
     }
 
     /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
     /// `flags`.
     ///
     /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
-    #[inline]
-    pub(super) const fn from_ol(ol: i32, YearFlags(flags): YearFlags) -> Mdf {
-        debug_assert!(ol > 1 && ol <= MAX_OL as i32);
+    pub fn from_ol(ol: i32, yearFlags: YearFlags) Mdf {
+        std.debug.assert(ol > 1 and ol <= MAX_OL);
         // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
-        Mdf(((ol as u32 + OL_TO_MDL[ol as usize] as u32) << 3) | flags as u32)
+        return Mdf.new_value(((ol + OL_TO_MDL[ol]) << 3) |  yearFlags.get());
     }
 
     /// Returns the month of this `Mdf`.
-    #[inline]
-    pub(super) const fn month(&self) -> u32 {
-        let Mdf(mdf) = *self;
-        mdf >> 9
+    pub fn month(self: Self) u32 {
+        return self.value >> 9;
     }
 
     /// Replaces the month of this `Mdf`, keeping the day and flags.
@@ -276,21 +303,16 @@ impl Mdf {
     /// # Errors
     ///
     /// Returns `None` if `month > 12`.
-    #[inline]
-    pub(super) const fn with_month(&self, month: u32) -> Option<Mdf> {
-        if month > 12 {
-            return None;
+    pub fn with_month(self: Self, month: u32) ?Mdf {
+        if (month > 12) {
+            return null;
         }
-
-        let Mdf(mdf) = *self;
-        Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
+        return Mdf.new_value((self.value & 0b1_1111_1111) | (month << 9));
     }
 
     /// Returns the day of this `Mdf`.
-    #[inline]
-    pub(super) const fn day(&self) -> u32 {
-        let Mdf(mdf) = *self;
-        (mdf >> 4) & 0b1_1111
+    pub fn day(self: Self) u32 {
+        return (self.value >> 4) & 0b1_1111;
     }
 
     /// Replaces the day of this `Mdf`, keeping the month and flags.
@@ -298,22 +320,18 @@ impl Mdf {
     /// # Errors
     ///
     /// Returns `None` if `day > 31`.
-    #[inline]
-    pub(super) const fn with_day(&self, day: u32) -> Option<Mdf> {
-        if day > 31 {
-            return None;
+    pub fn with_day(self: Self, day: u32) Mdf {
+        if (day > 31) {
+            return null;
         }
-
-        let Mdf(mdf) = *self;
-        Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
+        return Mdf.new_value((self.value & !0b1_1111_0000) | (day << 4));
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
-    #[inline]
-    pub(super) const fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
-        let Mdf(mdf) = *self;
-        Mdf((mdf & !0b1111) | flags as u32)
+    pub fn with_flags(self: Self, yearFlags: YearFlags) Mdf {
+        return Mdf.new_value((self.value & !0b1111) | yearFlags.value);
     }
+
 
     /// Returns the ordinal that corresponds to this `Mdf`.
     ///
@@ -324,19 +342,18 @@ impl Mdf {
     ///
     /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
     /// given month.
-    #[inline]
-    pub(super) const fn ordinal(&self) -> Option<u32> {
-        let mdl = self.0 >> 3;
-        match MDL_TO_OL[mdl as usize] {
-            XX => None,
-            v => Some((mdl - v as u8 as u32) >> 1),
-        }
+    pub fn ordinal(self: Self) ?u32 {
+        const mdl = self.value >> 3;
+        const value = switch (MDL_TO_OL[mdl]) {
+            XX => null,
+            v => (mdl - v) >> 1,
+        };
+        return value;
     }
 
     /// Returns the year flags of this `Mdf`.
-    #[inline]
-    pub(super) const fn year_flags(&self) -> YearFlags {
-        YearFlags((self.0 & 0b1111) as u8)
+    pub fn year_flags(self: Self) YearFlags {
+        return YearFlags.new(self.value & 0b1111);
     }
 
     /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
@@ -348,21 +365,23 @@ impl Mdf {
     ///
     /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
     /// given month.
-    #[inline]
-    pub(super) const fn ordinal_and_flags(&self) -> Option<i32> {
-        let mdl = self.0 >> 3;
-        match MDL_TO_OL[mdl as usize] {
-            XX => None,
-            v => Some(self.0 as i32 - ((v as i32) << 3)),
-        }
+    pub fn ordinal_and_flags(self: Self) ?i32 {
+        const mdl = self.value >> 3;
+        const value = switch (MDL_TO_OL[mdl]) {
+            XX => null,
+            v => Some(self.value - (v << 3)),
+        };
+        return value;
     }
 
-    #[cfg(test)]
-    fn valid(&self) -> bool {
-        let mdl = self.0 >> 3;
-        MDL_TO_OL[mdl as usize] > 0
+    fn valid(self: Self) bool {
+        const mdl = self.value >> 3;
+        return MDL_TO_OL[mdl] > 0;
     }
-}
+
+};
+
+
 
 impl fmt::Debug for Mdf {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

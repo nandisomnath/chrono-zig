@@ -33,8 +33,14 @@ pub fn build(b: *std.Build) void {
     // for actually invoking the compiler.
     const lib = b.addLibrary(.{
         .linkage = .static,
-        .name = "foo",
+        .name = "chronozig",
         .root_module = lib_mod,
+    });
+
+    _ = b.addModule("chrono", .{
+        .root_source_file = b.path("src/root.zig"),
+        .optimize = optimize,
+        .target = target
     });
 
     // This declares intent for the library to be installed into the standard

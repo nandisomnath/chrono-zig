@@ -22,7 +22,7 @@ pub const TimeDelta = time_delta.TimeDelta;
 pub const Duration = TimeDelta;
 
 
-/// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
+// /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 // pub mod prelude {
 //     #[allow(deprecated)]
 //     pub use crate::Date;

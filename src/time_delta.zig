@@ -34,9 +34,9 @@ const i64_max = std.math.maxInt(i64);
 
 
 fn div_mod_floor_64(this: i64, other: i64) struct {i64, i64} {
-    var div_euclid = try std.math.divFloor(i64, this, other);
-    var m = try std.math.mul(i64, div_euclid, other);
-    var rem_euclid = this - m;
+    const div_euclid = try std.math.divFloor(i64, this, other);
+    const m = try std.math.mul(i64, div_euclid, other);
+    const rem_euclid = this - m;
     return .{div_euclid, rem_euclid};
 }
 
@@ -263,7 +263,7 @@ pub const  TimeDelta = struct {
     /// Returns the total number of whole microseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub fn num_microseconds(self: Self) !i64 {
-        var secs_part = try std.math.mul(i64,  self.num_seconds(), MICROS_PER_SEC)
+        var secs_part = try std.math.mul(i64,  self.num_seconds(), MICROS_PER_SEC);
         var nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
         return try std.math.add(i64, secs_part, nanos_part);
     }
@@ -324,37 +324,37 @@ pub const  TimeDelta = struct {
     }
 
     /// Multiply a `TimeDelta` with a i32, returning `None` if overflow occurred.
-    pub fn checked_mul(self: Self, rhs: i32) ?TimeDelta {
-        // Multiply nanoseconds as i64, because it cannot overflow that way.
-        var total_nanos = self.nanos * rhs;
-        var extra_secs, nanos = div_mod_floor_64(total_nanos, NANOS_PER_SEC);
-        // Multiply seconds as i128 to prevent overflow
-        var secs: i128 = self.secs as i128 * rhs as i128 + extra_secs as i128;
-        if (secs <= i64::MIN) || (secs >= i64::MAX) {
-            return null;
-        };
+    // pub fn checked_mul(self: Self, rhs: i32) ?TimeDelta {
+    //     // Multiply nanoseconds as i64, because it cannot overflow that way.
+    //     var total_nanos = self.nanos * rhs;
+    //     var extra_secs, nanos = div_mod_floor_64(total_nanos, NANOS_PER_SEC);
+    //     // Multiply seconds as i128 to prevent overflow
+    //     var secs: i128 = self.secs as i128 * rhs as i128 + extra_secs as i128;
+    //     if (secs <= i64::MIN) || (secs >= i64::MAX) {
+    //         return null;
+    //     };
 
-        return TimeDelta { .secs = secs, .nanos = nanos };
-    }
+    //     return TimeDelta { .secs = secs, .nanos = nanos };
+    // }
 
     /// Divide a `TimeDelta` with a i32, returning `None` if dividing by 0.
-    pub  fn checked_div(self: Self, rhs: i32) ?TimeDelta {
-        if (rhs == 0) {
-            return null;
-        }
-        const secs = self.secs / rhs as i64;
-        const carry = self.secs % rhs as i64;
-        const extra_nanos = carry * NANOS_PER_SEC as i64 / rhs as i64;
-        const nanos = self.nanos / rhs + extra_nanos as i32;
+    // pub  fn checked_div(self: Self, rhs: i32) ?TimeDelta {
+    //     if (rhs == 0) {
+    //         return null;
+    //     }
+    //     const secs = self.secs / rhs as i64;
+    //     const carry = self.secs % rhs as i64;
+    //     const extra_nanos = carry * NANOS_PER_SEC as i64 / rhs as i64;
+    //     const nanos = self.nanos / rhs + extra_nanos as i32;
 
-        let (secs, nanos) = match nanos {
-            i32::MIN..=-1 => (secs - 1, nanos + NANOS_PER_SEC),
-            NANOS_PER_SEC..=i32::MAX => (secs + 1, nanos - NANOS_PER_SEC),
-            _ => (secs, nanos),
-        };
+    //     let (secs, nanos) = match nanos {
+    //         i32::MIN..=-1 => (secs - 1, nanos + NANOS_PER_SEC),
+    //         NANOS_PER_SEC..=i32::MAX => (secs + 1, nanos - NANOS_PER_SEC),
+    //         _ => (secs, nanos),
+    //     };
 
-        return TimeDelta { secs, nanos }
-    }
+    //     return TimeDelta { secs, nanos }
+    // }
 
     /// Returns the `TimeDelta` as an absolute (non-negative) value.
     pub  fn abs(self: Self) TimeDelta {
@@ -382,10 +382,10 @@ pub const  TimeDelta = struct {
         return (self.secs == 0 and self.nanos == 0);
     }
 
-    /// Creates a `TimeDelta` object from `std::time::Duration`
-    ///
-    /// This function errors when original duration is larger than the maximum
-    /// value supported for this type.
+    // Creates a `TimeDelta` object from `std::time::Duration`
+    //
+    // This function errors when original duration is larger than the maximum
+    // value supported for this type.
     // pub const fn from_std(duration: Duration) -> Result<TimeDelta, OutOfRangeError> {
     //     // We need to check secs as u64 before coercing to i64
     //     if duration.as_secs() > MAX.secs as u64 {

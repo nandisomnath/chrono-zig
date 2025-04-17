@@ -14,6 +14,11 @@ pub const naive = @import("naive.zig");
 pub const weekday = @import("weekday.zig");
 
 
+test {
+    _ = time_delta;
+    _ = naive;
+    _ = weekday;
+}
 
 pub const OutOfRangeError = time_delta.TimeDeltaError.OutOfRangeError;
 pub const TimeDelta = time_delta.TimeDelta;

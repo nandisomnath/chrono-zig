@@ -9,8 +9,9 @@
 // #[cfg(feature = "alloc")]
 // extern crate alloc;
 
-const time_delta = @import("time_delta.zig");
+pub const time_delta = @import("time_delta.zig");
 pub const naive = @import("naive.zig");
+pub const weekday = @import("weekday.zig");
 
 
 

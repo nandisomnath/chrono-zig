@@ -61,7 +61,7 @@ fn div_mod_floor_64(this: i64, other: i64) struct {i64, i64} {
 pub const  TimeDelta = struct {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
-
+    const Self = @This();
 
     pub fn new(secs: i64, nanos: u32)  ?TimeDelta {
         if (secs < MIN.secs
@@ -182,62 +182,47 @@ pub const  TimeDelta = struct {
     // function is therefore infallible.
     pub  fn nanoseconds(nanos: i64) TimeDelta {
         var secs, nanos = div_mod_floor_64(nanos, NANOS_PER_SEC);
-        TimeDelta { .secs, nanos: nanos as i32 }
+        return TimeDelta {
+            .secs = secs,
+            .nanos = nanos,
+        };
     }
 
     /// Returns the total number of whole weeks in the `TimeDelta`.
-    #[inline]
-    pub const fn num_weeks(&self) -> i64 {
-        self.num_days() / 7
+
+    pub fn num_weeks(self: Self) i64 {
+        return self.num_days() / 7;
     }
 
     /// Returns the total number of whole days in the `TimeDelta`.
-    #[inline]
-    pub const fn num_days(&self) -> i64 {
-        self.num_seconds() / SECS_PER_DAY
+    pub  fn num_days(self: Self) i64 {
+        return self.num_seconds() / SECS_PER_DAY;
     }
 
     /// Returns the total number of whole hours in the `TimeDelta`.
-    #[inline]
-    pub const fn num_hours(&self) -> i64 {
-        self.num_seconds() / SECS_PER_HOUR
+    pub  fn num_hours(self: Self) i64 {
+        return self.num_seconds() / SECS_PER_HOUR;
     }
 
     /// Returns the total number of whole minutes in the `TimeDelta`.
-    #[inline]
-    pub const fn num_minutes(&self) -> i64 {
-        self.num_seconds() / SECS_PER_MINUTE
+
+    pub  fn num_minutes(self: Self) i64 {
+        return self.num_seconds() / SECS_PER_MINUTE;
     }
 
     /// Returns the total number of whole seconds in the `TimeDelta`.
-    pub const fn num_seconds(&self) -> i64 {
+    pub  fn num_seconds(self: Self) i64 {
         // If secs is negative, nanos should be subtracted from the duration.
-        if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
+        if (self.secs < 0 and self.nanos > 0) 
+        { return self.secs + 1; }
+         
+        return self.secs;
+             
     }
-   
-};
 
 
 
-/// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
-const MIN = TimeDelta {
-    .secs = -i64_max / MILLIS_PER_SEC - 1,
-    .nanos =  NANOS_PER_SEC + (-i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
-};
-
-/// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
-const MAX: TimeDelta = TimeDelta {
-    .secs = i64_max / MILLIS_PER_SEC,
-    .nanos = (i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
-};
-
-
-
-impl TimeDelta {
-
-  
-
-    /// Returns the fractional number of seconds in the `TimeDelta`.
+      /// Returns the fractional number of seconds in the `TimeDelta`.
     pub fn as_seconds_f64(self) -> f64 {
         self.secs as f64 + self.nanos as f64 / NANOS_PER_SEC as f64
     }
@@ -412,6 +397,31 @@ impl TimeDelta {
             None => Err(OutOfRangeError(())),
         }
     }
+
+   
+};
+
+
+
+/// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
+const MIN = TimeDelta {
+    .secs = -i64_max / MILLIS_PER_SEC - 1,
+    .nanos =  NANOS_PER_SEC + (-i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
+};
+
+/// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
+const MAX: TimeDelta = TimeDelta {
+    .secs = i64_max / MILLIS_PER_SEC,
+    .nanos = (i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
+};
+
+
+
+impl TimeDelta {
+
+  
+
+  
 
     /// Creates a `std::time::Duration` object from a `TimeDelta`.
     ///

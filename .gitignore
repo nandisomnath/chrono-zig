@@ -1,6 +1,11 @@
-target
-Cargo.lock
-.tool-versions
+.zig-cache/*
+.zig-out/*
+
+*.a
+*.txt
+
 
 # for jetbrains users
 .idea/
+
+

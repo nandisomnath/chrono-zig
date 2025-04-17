@@ -31,6 +31,9 @@
 
 // the zig support for max 
 const std = @import("std");
+const internals = @import("internals.zig");
+const YearFlags = internals.YearFlags;
+
 const i32_max = std.math.maxInt(i32);
 const i32_min = std.math.minInt(i32);
 
@@ -105,7 +108,7 @@ pub const NaiveDate = struct {
         if (ordinal == 0 or ordinal > 366) {
             return null; // Invalid
         }
-        std.debug.assert(YearFlags::from_year(year).0 == flags.0);
+        std.debug.assert(YearFlags.from_year(year).value == flags.value);
         // const yof = (year << 13) | (ordinal << 4) | flags.0;
         // match yof & OL_MASK <= MAX_OL {
         //     true => Some(NaiveDate::from_yof(yof)),

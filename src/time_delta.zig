@@ -28,6 +28,19 @@ const SECS_PER_DAY: i64 = 86_400;
 /// The number of (non-leap) seconds in a week.
 const SECS_PER_WEEK: i64 = 604_800;
 
+// creating custion max i64_max const
+const i64_max = std.math.maxInt(i64);
+
+
+
+fn div_mod_floor_64(this: i64, other: i64) struct {i64, i64} {
+    var div_euclid = try std.math.divFloor(i64, this, other);
+    var m = try std.math.mul(i64, div_euclid, other);
+    var rem_euclid = this - m;
+    return .{div_euclid, rem_euclid};
+}
+
+
 // Time duration with nanosecond precision.
 //
 // This also allows for negative durations; see individual methods for details.
@@ -134,73 +147,42 @@ pub const  TimeDelta = struct {
     }
 
 
-   
-};
-
-const i64_max = std.math.maxInt(i64);
-
-/// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
-const MIN = TimeDelta {
-    .secs = -i64_max / MILLIS_PER_SEC - 1,
-    .nanos =  NANOS_PER_SEC + (-i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
-};
-
-/// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
-const MAX: TimeDelta = TimeDelta {
-    .secs = i64_max / MILLIS_PER_SEC,
-    .nanos = (i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
-};
-
-
-
-impl TimeDelta {
-
-    #[inline]
-    pub const fn milliseconds(milliseconds: i64) -> TimeDelta {
-        expect(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
+    pub  fn milliseconds(_milliseconds: i64) TimeDelta {
+        if (try_milliseconds(_milliseconds)) |t| {
+            return t;
+        }
+        @panic("TimeDelta.milliseconds out of bounds");
+        // expect(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
     }
 
-    /// Makes a new `TimeDelta` with the given number of milliseconds.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` the `TimeDelta` would be out of bounds, i.e. when `milliseconds` is more
-    /// than `i64::MAX` or less than `-i64::MAX`. Notably, this is not the same as `i64::MIN`.
-    #[inline]
-    pub const fn try_milliseconds(milliseconds: i64) -> Option<TimeDelta> {
+
+    pub  fn try_milliseconds(milliseconds: i64) ?TimeDelta {
         // We don't need to compare against MAX, as this function accepts an
         // i64, and MAX is aligned to i64::MAX milliseconds.
-        if milliseconds < -i64::MAX {
-            return None;
+        if (milliseconds < - i64_max) {
+            return null;
         }
-        let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
-        let d = TimeDelta { secs, nanos: millis as i32 * NANOS_PER_MILLI };
-        Some(d)
+        var secs, millis = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
+        return TimeDelta {
+            .secs = secs, .nanos = millis * NANOS_PER_MILLI };
     }
 
-    /// Makes a new `TimeDelta` with the given number of microseconds.
-    ///
-    /// The number of microseconds acceptable by this constructor is less than
-    /// the total number that can actually be stored in a `TimeDelta`, so it is
-    /// not possible to specify a value that would be out of bounds. This
-    /// function is therefore infallible.
-    #[inline]
-    pub const fn microseconds(microseconds: i64) -> TimeDelta {
-        let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
-        let nanos = micros as i32 * NANOS_PER_MICRO;
-        TimeDelta { secs, nanos }
+
+    pub fn microseconds(microseconds: i64) TimeDelta {
+        var secs, micros = div_mod_floor_64(microseconds, MICROS_PER_SEC);
+        var nanos = micros * NANOS_PER_MICRO;
+        return TimeDelta { .secs = secs, .nanos = nanos };
     }
 
-    /// Makes a new `TimeDelta` with the given number of nanoseconds.
-    ///
-    /// The number of nanoseconds acceptable by this constructor is less than
-    /// the total number that can actually be stored in a `TimeDelta`, so it is
-    /// not possible to specify a value that would be out of bounds. This
-    /// function is therefore infallible.
-    #[inline]
-    pub const fn nanoseconds(nanos: i64) -> TimeDelta {
-        let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
-        TimeDelta { secs, nanos: nanos as i32 }
+    // Makes a new `TimeDelta` with the given number of nanoseconds.
+    //
+    // The number of nanoseconds acceptable by this constructor is less than
+    // the total number that can actually be stored in a `TimeDelta`, so it is
+    // not possible to specify a value that would be out of bounds. This
+    // function is therefore infallible.
+    pub  fn nanoseconds(nanos: i64) TimeDelta {
+        var secs, nanos = div_mod_floor_64(nanos, NANOS_PER_SEC);
+        TimeDelta { .secs, nanos: nanos as i32 }
     }
 
     /// Returns the total number of whole weeks in the `TimeDelta`.
@@ -232,6 +214,28 @@ impl TimeDelta {
         // If secs is negative, nanos should be subtracted from the duration.
         if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
     }
+   
+};
+
+
+
+/// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
+const MIN = TimeDelta {
+    .secs = -i64_max / MILLIS_PER_SEC - 1,
+    .nanos =  NANOS_PER_SEC + (-i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
+};
+
+/// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
+const MAX: TimeDelta = TimeDelta {
+    .secs = i64_max / MILLIS_PER_SEC,
+    .nanos = (i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
+};
+
+
+
+impl TimeDelta {
+
+  
 
     /// Returns the fractional number of seconds in the `TimeDelta`.
     pub fn as_seconds_f64(self) -> f64 {
@@ -567,10 +571,7 @@ impl Error for OutOfRangeError {
     }
 }
 
-#[inline]
-const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
-    (this.div_euclid(other), this.rem_euclid(other))
-}
+
 
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 impl arbitrary::Arbitrary<'_> for TimeDelta {

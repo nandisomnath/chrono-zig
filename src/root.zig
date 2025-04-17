@@ -10,7 +10,7 @@
 // extern crate alloc;
 
 const time_delta = @import("time_delta.zig");
-pub const OutOfRangeError = time_delta.OutOfRangeError;
+pub const OutOfRangeError = time_delta.TimeDeltaError.OutOfRangeError;
 pub const TimeDelta = time_delta.TimeDelta;
 
 

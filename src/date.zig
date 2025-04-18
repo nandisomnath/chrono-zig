@@ -7,10 +7,19 @@
 // use crate::format::Locale;
 // #[cfg(feature = "alloc")]
 // use crate::format::{DelayedFormat, Item, StrftimeItems};
-// use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+// use crate::naive::{, NaiveDate, };
 // use crate::offset::{TimeZone, Utc};
 // use crate::{DateTime, Datelike, TimeDelta, Weekday};
 
+const naive = @import("naive/root.zig");
+
+const IsoWeek = naive.IsoWeek;
+const NaiveTime = naive.NaiveTime;
+const NaiveDate = naive.NaiveDate;
+
+// The date is a simple alias for NaiveDate and also this date is deprecated so
+// this is the Date for zig. No need to implement it another time.
+pub const Date = NaiveDate;
 
 
 // #[deprecated(since = "0.4.23", note = "Use `NaiveDate` or `DateTime<Tz>` instead")]

@@ -10,7 +10,7 @@
 // extern crate alloc;
 
 pub const time_delta = @import("time_delta.zig");
-pub const naive = @import("naive.zig");
+pub const naive = @import("naive/root.zig");
 pub const weekday = @import("weekday.zig");
 pub const month = @import("month.zig");
 

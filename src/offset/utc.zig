@@ -22,6 +22,7 @@
 // #[cfg(feature = "now")]
 // #[allow(deprecated)]
 // use crate::{Date, DateTime};
+const DateTime = @import("../datetime/root.zig").DateTime;
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -63,28 +64,13 @@ pub const Utc = struct {
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
-    // #[cfg(not(all(
-    //     target_arch = "wasm32",
-    //     feature = "wasmbind",
-    //     not(any(target_os = "emscripten", target_os = "wasi"))
-    // )))]
-    // #[must_use]
-    // pub fn now() -> DateTime<Utc> {
-    //     let now =
-    //         SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-    //     DateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap()
-    // }
-
-    // /// Returns a `DateTime` which corresponds to the current date and time.
-    // #[cfg(all(
-    //     target_arch = "wasm32",
-    //     feature = "wasmbind",
-    //     not(any(target_os = "emscripten", target_os = "wasi"))
-    // ))]
-    pub fn now() DateTime<Utc> {
-        let now = js_sys::Date::new_0();
-        DateTime::<Utc>::from(now)
+    pub fn now() DateTime {
+        const now =
+            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
+        DateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap()
     }
+
+    
 };
 
 #[cfg(feature = "now")]

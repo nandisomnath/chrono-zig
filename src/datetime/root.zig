@@ -3,60 +3,53 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
-use alloc::string::String;
-use core::borrow::Borrow;
-use core::cmp::Ordering;
-use core::fmt::Write;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::time::Duration;
-use core::{fmt, hash, str};
-#[cfg(feature = "std")]
-use std::time::{SystemTime, UNIX_EPOCH};
+// #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
+// use alloc::string::String;
+// use core::borrow::Borrow;
+// use core::cmp::Ordering;
+// use core::fmt::Write;
+// use core::ops::{Add, AddAssign, Sub, SubAssign};
+// use core::time::Duration;
+// use core::{fmt, hash, str};
+// #[cfg(feature = "std")]
+// use std::time::{SystemTime, UNIX_EPOCH};
 
-#[allow(deprecated)]
-use crate::Date;
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-use crate::format::Locale;
-#[cfg(feature = "alloc")]
-use crate::format::{DelayedFormat, SecondsFormat, write_rfc2822, write_rfc3339};
-use crate::format::{
-    Fixed, Item, ParseError, ParseResult, Parsed, StrftimeItems, TOO_LONG, parse,
-    parse_and_remainder, parse_rfc3339,
-};
-use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
-#[cfg(feature = "clock")]
-use crate::offset::Local;
-use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
-use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
-use crate::{expect, try_opt};
+// #[allow(deprecated)]
+// use crate::Date;
+// #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+// use crate::format::Locale;
+// #[cfg(feature = "alloc")]
+// use crate::format::{DelayedFormat, SecondsFormat, write_rfc2822, write_rfc3339};
+// use crate::format::{
+//     Fixed, Item, ParseError, ParseResult, Parsed, StrftimeItems, TOO_LONG, parse,
+//     parse_and_remainder, parse_rfc3339,
+// };
+// use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+// #[cfg(feature = "clock")]
+// use crate::offset::Local;
+// use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+// use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+// use crate::{expect, try_opt};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
-use rkyv::{Archive, Deserialize, Serialize};
+// #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+// use rkyv::{Archive, Deserialize, Serialize};
 
-/// documented at re-export site
-#[cfg(feature = "serde")]
-pub(super) mod serde;
+// /// documented at re-export site
+// #[cfg(feature = "serde")]
+// pub(super) mod serde;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 /// ISO 8601 combined date and time with time zone.
 ///
 /// There are some constructors implemented here (the `from_*` methods), but
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
-#[derive(Clone)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
-pub struct DateTime<Tz: TimeZone> {
+pub const DateTime = struct { // DateTime<Tz: TimeZone>
     datetime: NaiveDateTime,
     offset: Tz::Offset,
-}
+};
 
 /// The minimum possible `DateTime<Utc>`.
 #[deprecated(since = "0.4.20", note = "Use DateTime::MIN_UTC instead")]

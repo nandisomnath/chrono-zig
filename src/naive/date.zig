@@ -32,12 +32,26 @@
 // the zig support for max 
 const std = @import("std");
 const internals = @import("internals.zig");
+const weekday = @import("../weekday.zig");
+const Weekday = weekday.Weekday;
 const YearFlags = internals.YearFlags;
 const Mdf = internals.Mdf;
 
 const i32_max = std.math.maxInt(i32);
 const i32_min = std.math.minInt(i32);
 
+fn div_euclid(comptime T: type, this: T, other: T) !T {
+    const value = try std.math.divFloor(T, this, other);
+    return value;
+}
+
+fn rem_euclid(comptime T: type, this: T, other: T) !T {
+    
+    const _div_euclid = try div_euclid(T, this, other);
+    const m = try std.math.mul(T, _div_euclid, other);
+    const _rem_euclid = this - m;
+    return _rem_euclid;
+}
 
 
 /// ISO 8601 calendar date without timezone.
@@ -91,7 +105,7 @@ const i32_min = std.math.minInt(i32);
 pub const NaiveDate = struct {
 
     // NonZeroI32
-    yof: i32, // (year << 13) | of
+    pyof: i32, // (year << 13) | of
     const Self = @This();
 
     pub fn weeks_from(self: Self, day: Weekday) i32 {
@@ -103,20 +117,20 @@ pub const NaiveDate = struct {
     ///
     /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
     /// doesn't do any validation in release builds.
-    fn from_yof(yof: i32) NaiveDate {
+    fn from_yof(_yof: i32) NaiveDate {
         // The following are the invariants our ordinal and flags should uphold for a valid
         // `NaiveDate`.
-        std.debug.assert(((yof & OL_MASK) >> 3) > 1);
-        std.debug.assert(((yof & OL_MASK) >> 3) <= MAX_OL);
-        std.debug.assert((yof & 0b111) != 000);
+        std.debug.assert(((_yof & OL_MASK) >> 3) > 1);
+        std.debug.assert(((_yof & OL_MASK) >> 3) <= MAX_OL);
+        std.debug.assert((_yof & 0b111) != 000);
         return NaiveDate {
-            .yof = yof,
+            .pyof = _yof,
         };
     }
 
     /// Get the raw year-ordinal-flags `i32`.
     fn yof(self: Self) i32 {
-        return self.yof;
+        return self.pyof;
     }
 
     fn from_ordinal_and_flags(
@@ -222,17 +236,6 @@ pub const NaiveDate = struct {
     }
 
 
-};
-
-
-
-impl NaiveDate {
-    
-
-    
-
-    
-
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
     /// (year, week number and day of the week).
     /// The resulting `NaiveDate` may have a different year from the input year.
@@ -282,33 +285,37 @@ impl NaiveDate {
     /// assert_eq!(from_isoywd_opt(2015, 54, Weekday::Mon), None);
     /// assert_eq!(from_isoywd_opt(2016, 1, Weekday::Mon), Some(from_ymd(2016, 1, 4)));
     /// ```
-    #[must_use]
-    pub const fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
-        let flags = YearFlags::from_year(year);
-        let nweeks = flags.nisoweeks();
-        if week == 0 || week > nweeks {
-            return None;
+    pub fn from_isoywd_opt(_year: i32, _week: u32, _weekday: Weekday) ?NaiveDate {
+        const flags = YearFlags.from_year(_year);
+        const nweeks = flags.nisoweeks();
+        if (_week == 0 or _week > nweeks) {
+            return null;
         }
         // ordinal = week ordinal - delta
-        let weekord = week * 7 + weekday as u32;
-        let delta = flags.isoweek_delta();
-        let (year, ordinal, flags) = if weekord <= delta {
+        const weekord = _week * 7 + _weekday;
+        const delta = flags.isoweek_delta();
+        
+        // const (year, ordinal, flags) = 
+        if (weekord <= delta) {
             // ordinal < 1, previous year
-            let prevflags = YearFlags::from_year(year - 1);
-            (year - 1, weekord + prevflags.ndays() - delta, prevflags)
-        } else {
-            let ordinal = weekord - delta;
-            let ndays = flags.ndays();
-            if ordinal <= ndays {
-                // this year
-                (year, ordinal, flags)
-            } else {
-                // ordinal > ndays, next year
-                let nextflags = YearFlags::from_year(year + 1);
-                (year + 1, ordinal - ndays, nextflags)
-            }
-        };
-        NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
+            const prevflags = YearFlags.from_year(year - 1);
+            // (year - 1, weekord + prevflags.ndays() - delta, prevflags)
+            return NaiveDate.from_ordinal_and_flags(_year-1, weekord + prevflags.ndays() - delta, prevflags);
+        }
+
+        const ordinal = weekord - delta;
+        const ndays = flags.ndays();
+        if (ordinal <= ndays) {
+            // this year
+            // (year, ordinal, flags)
+            return NaiveDate.from_ordinal_and_flags(_year, ordinal, flags);
+        } 
+
+        // ordinal > ndays, next year
+        const nextflags = YearFlags.from_year(_year + 1);
+        // (year + 1, ordinal - ndays, nextflags)
+        return NaiveDate.from_ordinal_and_flags(_year+1, ordinal-ndays, nextflags);
+    
     }
 
     
@@ -335,14 +342,26 @@ impl NaiveDate {
     /// assert_eq!(from_ndays_opt(100_000_000), None);
     /// assert_eq!(from_ndays_opt(-100_000_000), None);
     /// ```
-    #[must_use]
-    pub const fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
-        let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
-        let year_div_400 = days.div_euclid(146_097);
-        let cycle = days.rem_euclid(146_097);
-        let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
+    pub  fn from_num_days_from_ce_opt(_days: i32)  !?NaiveDate {
+        const days = try std.math.add(i32, _days, 365); // make December 31, 1 BCE equal to day 0
+        const year_div_400 =  try div_euclid(i32, days, 146_097);// days.div_euclid(146_097);
+        const cycle =  try rem_euclid(i32, days, 146_097);//days.rem_euclid(146_097);
+        const year_mod_400, const ordinal = cycle_to_yo(cycle);
+        const flags = YearFlags.from_year_mod_400(year_mod_400);
+        return NaiveDate.from_ordinal_and_flags(year_div_400 * 400 + year_mod_400, ordinal, flags);
+    }
+
+    /// Returns the day of week.
+    // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
+    pub fn weekday(self: Self) Weekday {
+        const v = (((self.yof() & ORDINAL_MASK) >> 4) + (self.yof() & WEEKDAY_FLAGS_MASK)) % 7;
+        if (v == 0) { return .Mon; }
+        if (v == 1) { return .Tue; }
+        if (v == 2) { return .Wed; }
+        if (v == 3) { return .Thu; }
+        if (v == 4) { return .Fri; }
+        if (v == 5) { return .Sat; }
+        return .Sun;
     }
 
 
@@ -368,75 +387,30 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2017, 3, 10)
     /// )
     /// ```
-    #[must_use]
-    pub const fn from_weekday_of_month_opt(
-        year: i32,
-        month: u32,
-        weekday: Weekday,
+    pub  fn from_weekday_of_month_opt(
+        _year: i32,
+        _month: u32,
+        _weekday: Weekday,
         n: u8,
-    ) -> Option<NaiveDate> {
-        if n == 0 {
-            return None;
+    ) ?NaiveDate {
+        if (n == 0) {
+            return null;
         }
-        let first = try_opt!(NaiveDate::from_ymd_opt(year, month, 1)).weekday();
-        let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
-        let day = (n - 1) as u32 * 7 + first_to_dow + 1;
-        NaiveDate::from_ymd_opt(year, month, day)
+        
+        var first = NaiveDate.from_ymd_opt(_year, _month, 1).?.weekday();
+        var first_to_dow = (7 + _weekday.number_from_monday() - first.number_from_monday()) % 7;
+        var day = (n - 1) * 7 + first_to_dow + 1;
+        return NaiveDate.from_ymd_opt(_year, _month, day);
     }
 
-    /// Parses a string with the specified format string and returns a new `NaiveDate`.
-    /// See the [`format::strftime` module](crate::format::strftime)
-    /// on the supported escape sequences.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// let parse_from_str = NaiveDate::parse_from_str;
-    ///
-    /// assert_eq!(
-    ///     parse_from_str("2015-09-05", "%Y-%m-%d"),
-    ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     parse_from_str("5sep2015", "%d%b%Y"),
-    ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap())
-    /// );
-    /// ```
-    ///
-    /// Time and offset is ignored for the purpose of parsing.
-    ///
-    /// ```
-    /// # use chrono::NaiveDate;
-    /// # let parse_from_str = NaiveDate::parse_from_str;
-    /// assert_eq!(
-    ///     parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-    ///     Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap())
-    /// );
-    /// ```
-    ///
-    /// Out-of-bound dates or insufficient fields are errors.
-    ///
-    /// ```
-    /// # use chrono::NaiveDate;
-    /// # let parse_from_str = NaiveDate::parse_from_str;
-    /// assert!(parse_from_str("2015/9", "%Y/%m").is_err());
-    /// assert!(parse_from_str("2015/9/31", "%Y/%m/%d").is_err());
-    /// ```
-    ///
-    /// All parsed fields should be consistent to each other, otherwise it's an error.
-    ///
-    /// ```
-    /// # use chrono::NaiveDate;
-    /// # let parse_from_str = NaiveDate::parse_from_str;
-    /// assert!(parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
-    /// ```
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
-        let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
-        parsed.to_naive_date()
-    }
+};
+
+
+
+impl NaiveDate {
+    
+
+    
 
     /// Parses a string from a user-specified format into a new `NaiveDate` value, and a slice with
     /// the remaining portion of the string.
@@ -1220,20 +1194,7 @@ impl NaiveDate {
         self.mdf().day()
     }
 
-    /// Returns the day of week.
-    // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
-    #[inline]
-    pub(super) const fn weekday(&self) -> Weekday {
-        match (((self.yof() & ORDINAL_MASK) >> 4) + (self.yof() & WEEKDAY_FLAGS_MASK)) % 7 {
-            0 => Weekday::Mon,
-            1 => Weekday::Tue,
-            2 => Weekday::Wed,
-            3 => Weekday::Thu,
-            4 => Weekday::Fri,
-            5 => Weekday::Sat,
-            _ => Weekday::Sun,
-        }
-    }
+    
 
     #[inline]
     const fn year_flags(&self) -> YearFlags {

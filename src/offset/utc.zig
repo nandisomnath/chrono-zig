@@ -3,25 +3,25 @@
 
 //! The UTC (Coordinated Universal Time) time zone.
 
-use core::fmt;
-#[cfg(all(
-    feature = "now",
-    not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))
-))]
-use std::time::{SystemTime, UNIX_EPOCH};
+// use core::fmt;
+// #[cfg(all(
+//     feature = "now",
+//     not(all(
+//         target_arch = "wasm32",
+//         feature = "wasmbind",
+//         not(any(target_os = "emscripten", target_os = "wasi"))
+//     ))
+// ))]
+// use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
-use rkyv::{Archive, Deserialize, Serialize};
+// #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+// use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
-use crate::naive::{NaiveDate, NaiveDateTime};
-#[cfg(feature = "now")]
-#[allow(deprecated)]
-use crate::{Date, DateTime};
+// use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
+// use crate::naive::{NaiveDate, NaiveDateTime};
+// #[cfg(feature = "now")]
+// #[allow(deprecated)]
+// use crate::{Date, DateTime};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -40,30 +40,7 @@ use crate::{Date, DateTime};
 /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
 /// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
 /// ```
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
-#[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
-pub struct Utc;
-
-#[cfg(feature = "now")]
-impl Utc {
-    /// Returns a `Date` which corresponds to the current date.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `Utc::now()` instead, potentially with `.date_naive()`"
-    )]
-    #[allow(deprecated)]
-    #[must_use]
-    pub fn today() -> Date<Utc> {
-        Utc::now().date()
-    }
-
+pub const Utc = struct {
     /// Returns a `DateTime<Utc>` which corresponds to the current date and time in UTC.
     ///
     /// See also the similar [`Local::now()`] which returns `DateTime<Local>`, i.e. the local date
@@ -86,29 +63,35 @@ impl Utc {
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
-    #[cfg(not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))]
-    #[must_use]
-    pub fn now() -> DateTime<Utc> {
-        let now =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        DateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap()
-    }
+    // #[cfg(not(all(
+    //     target_arch = "wasm32",
+    //     feature = "wasmbind",
+    //     not(any(target_os = "emscripten", target_os = "wasi"))
+    // )))]
+    // #[must_use]
+    // pub fn now() -> DateTime<Utc> {
+    //     let now =
+    //         SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
+    //     DateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap()
+    // }
 
-    /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))]
-    #[must_use]
-    pub fn now() -> DateTime<Utc> {
+    // /// Returns a `DateTime` which corresponds to the current date and time.
+    // #[cfg(all(
+    //     target_arch = "wasm32",
+    //     feature = "wasmbind",
+    //     not(any(target_os = "emscripten", target_os = "wasi"))
+    // ))]
+    pub fn now() DateTime<Utc> {
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)
     }
+};
+
+#[cfg(feature = "now")]
+impl Utc {
+   
+
+    
 }
 
 impl TimeZone for Utc {

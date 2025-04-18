@@ -97,6 +97,27 @@ pub const NaiveDate = struct {
         return self.ordinal() - self.weekday().days_since(day) + 6 / 7;
     }
 
+
+    /// Create a new `NaiveDate` from a raw year-ordinal-flags `i32`.
+    ///
+    /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
+    /// doesn't do any validation in release builds.
+    fn from_yof(yof: i32) NaiveDate {
+        // The following are the invariants our ordinal and flags should uphold for a valid
+        // `NaiveDate`.
+        std.debug.assert(((yof & OL_MASK) >> 3) > 1);
+        std.debug.assert(((yof & OL_MASK) >> 3) <= MAX_OL);
+        std.debug.assert((yof & 0b111) != 000);
+        return NaiveDate {
+            .yof = yof,
+        };
+    }
+
+    /// Get the raw year-ordinal-flags `i32`.
+    fn yof(self: Self) i32 {
+        return self.yof;
+    }
+
     fn from_ordinal_and_flags(
         year: i32,
         ordinal: u32,
@@ -109,19 +130,16 @@ pub const NaiveDate = struct {
             return null; // Invalid
         }
         std.debug.assert(YearFlags.from_year(year).value == flags.value);
-        // const yof = (year << 13) | (ordinal << 4) | flags.0;
-        // match yof & OL_MASK <= MAX_OL {
-        //     true => Some(NaiveDate::from_yof(yof)),
-        //     false => None, // Does not exist: Ordinal 366 in a common year.
-        // }
+        const _yof = (year << 13) | (ordinal << 4) | flags.value;
+        if (_yof & OL_MASK <= MAX_OL) {
+            return NaiveDate.from_yof(_yof);
+        } else {
+            return null;
+        }
+             
     }
 
-};
 
-
-
-impl NaiveDate {
-    
 
     /// Makes a new `NaiveDate` from year, ordinal and flags.
     /// Does not check whether the flags are correct for the provided year.
@@ -129,7 +147,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
-    const fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
+    fn from_mdf(year: i32, mdf: Mdf) ?NaiveDate {
         if year < MIN_YEAR || year > MAX_YEAR {
             return None; // Out-of-range
         }
@@ -205,6 +223,16 @@ impl NaiveDate {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
     }
+
+
+};
+
+
+
+impl NaiveDate {
+    
+
+    
 
     
 
@@ -1231,25 +1259,7 @@ impl NaiveDate {
         ndays + self.ordinal() as i32
     }
 
-    /// Create a new `NaiveDate` from a raw year-ordinal-flags `i32`.
-    ///
-    /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
-    /// doesn't do any validation in release builds.
-    #[inline]
-    const fn from_yof(yof: i32) -> NaiveDate {
-        // The following are the invariants our ordinal and flags should uphold for a valid
-        // `NaiveDate`.
-        debug_assert!(((yof & OL_MASK) >> 3) > 1);
-        debug_assert!(((yof & OL_MASK) >> 3) <= MAX_OL);
-        debug_assert!((yof & 0b111) != 000);
-        NaiveDate { yof: unsafe { NonZeroI32::new_unchecked(yof) } }
-    }
 
-    /// Get the raw year-ordinal-flags `i32`.
-    #[inline]
-    const fn yof(&self) -> i32 {
-        self.yof.get()
-    }
 
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
     pub const MIN: NaiveDate = NaiveDate::from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 /* D */);

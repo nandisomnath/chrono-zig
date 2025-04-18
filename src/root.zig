@@ -12,12 +12,13 @@
 pub const time_delta = @import("time_delta.zig");
 pub const naive = @import("naive.zig");
 pub const weekday = @import("weekday.zig");
-
+pub const month = @import("month.zig");
 
 test {
     _ = time_delta;
     _ = naive;
     _ = weekday;
+    _ = month;
 }
 
 pub const OutOfRangeError = time_delta.TimeDeltaError.OutOfRangeError;

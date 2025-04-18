@@ -33,6 +33,7 @@
 const std = @import("std");
 const internals = @import("internals.zig");
 const YearFlags = internals.YearFlags;
+const Mdf = internals.Mdf;
 
 const i32_max = std.math.maxInt(i32);
 const i32_min = std.math.minInt(i32);
@@ -143,15 +144,13 @@ pub const NaiveDate = struct {
 
     /// Makes a new `NaiveDate` from year, ordinal and flags.
     /// Does not check whether the flags are correct for the provided year.
-    
-
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
     fn from_mdf(year: i32, mdf: Mdf) ?NaiveDate {
-        if year < MIN_YEAR || year > MAX_YEAR {
-            return None; // Out-of-range
+        if (year < MIN_YEAR or year > MAX_YEAR) {
+            return null; // Out-of-range
         }
-        Some(NaiveDate::from_yof((year << 13) | try_opt!(mdf.ordinal_and_flags())))
+        return NaiveDate.from_yof((year << 13) | mdf.ordinal_and_flags());
     }
 
   
@@ -180,14 +179,13 @@ pub const NaiveDate = struct {
     /// assert!(from_ymd_opt(400000, 1, 1).is_none());
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
-    #[must_use]
-    pub const fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
-        let flags = YearFlags::from_year(year);
+    pub fn from_ymd_opt(year: i32, month: u32, day: u32) ?NaiveDate {
+        const flags = YearFlags.from_year(year);
 
-        if let Some(mdf) = Mdf::new(month, day, flags) {
-            NaiveDate::from_mdf(year, mdf)
+        if (Mdf.new(month, day, flags)) |mdf| {
+            return NaiveDate.from_mdf(year, mdf);
         } else {
-            None
+            return null;
         }
     }
 
@@ -218,10 +216,9 @@ pub const NaiveDate = struct {
     /// assert!(from_yo_opt(400000, 1).is_none());
     /// assert!(from_yo_opt(-400000, 1).is_none());
     /// ```
-    #[must_use]
-    pub const fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
-        let flags = YearFlags::from_year(year);
-        NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
+    pub fn from_yo_opt(year: i32, ordinal: u32) ?NaiveDate {
+        var flags = YearFlags.from_year(year);
+        return NaiveDate.from_ordinal_and_flags(year, ordinal, flags);
     }
 
 

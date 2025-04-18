@@ -267,70 +267,69 @@ pub const Mdf = struct {
     }
 
 
-    // /// Makes a new `Mdf` value from month, day and `YearFlags`.
-    // ///
-    // /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
-    // /// much as what can't be deferred until later. The year `flags` are trusted to be correct.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns `None` if `month > 12` or `day > 31`.
-    // pub fn new(month: u32, day: u32, yearFlags: YearFlags) ?Mdf {
-    //     const value = switch (month <= 12 and day <= 31) {
-    //         true => Mdf.new_value((month << 9) | (day << 4) | yearFlags.get()),
-    //         false => null,
-    //     };
-    //     return value;
-    // }
+    /// Makes a new `Mdf` value from month, day and `YearFlags`.
+    ///
+    /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
+    /// much as what can't be deferred until later. The year `flags` are trusted to be correct.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12` or `day > 31`.
+    pub fn new(_month: u32, _day: u32, yearFlags: YearFlags) ?Mdf {
+        if (_month <= 12 and _day <= 31) {
+            return Mdf.new_value((_month << 9) | (_day << 4) | yearFlags.get());
+        }
+        return null;
+    }
 
-    // /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
-    // /// `flags`.
-    // ///
-    // /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
-    // pub fn from_ol(ol: i32, yearFlags: YearFlags) Mdf {
-    //     std.debug.assert(ol > 1 and ol <= MAX_OL);
-    //     // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
-    //     return Mdf.new_value(((ol + OL_TO_MDL[ol]) << 3) |  yearFlags.get());
-    // }
+    /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
+    /// `flags`.
+    ///
+    /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
+    pub fn from_ol(ol: i32, yearFlags: YearFlags) Mdf {
+        std.debug.assert(ol > 1 and ol <= MAX_OL);
+        // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
+        return Mdf.new_value(((ol + OL_TO_MDL[ol]) << 3) |  yearFlags.get());
+    }
 
-    // /// Returns the month of this `Mdf`.
-    // pub fn month(self: Self) u32 {
-    //     return self.value >> 9;
-    // }
+    /// Returns the month of this `Mdf`.
+    pub fn month(self: Self) u32 {
+        return self.value >> 9;
+    }
 
-    // /// Replaces the month of this `Mdf`, keeping the day and flags.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns `None` if `month > 12`.
-    // pub fn with_month(self: Self, month: u32) ?Mdf {
-    //     if (month > 12) {
-    //         return null;
-    //     }
-    //     return Mdf.new_value((self.value & 0b1_1111_1111) | (month << 9));
-    // }
+    /// Replaces the month of this `Mdf`, keeping the day and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12`.
+    pub fn with_month(self: Self, _month: u32) ?Mdf {
+        if (_month > 12) {
+            return null;
+        }
+        return Mdf.new_value((self.value & 0b1_1111_1111) | (_month << 9));
+    }
 
-    // /// Returns the day of this `Mdf`.
-    // pub fn day(self: Self) u32 {
-    //     return (self.value >> 4) & 0b1_1111;
-    // }
+    /// Returns the day of this `Mdf`.
+    pub fn day(self: Self) u32 {
+        return (self.value >> 4) & 0b1_1111;
+    }
 
-    // /// Replaces the day of this `Mdf`, keeping the month and flags.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns `None` if `day > 31`.
-    // pub fn with_day(self: Self, day: u32) Mdf {
-    //     if (day > 31) {
-    //         return null;
-    //     }
-    //     return Mdf.new_value((self.value & !0b1_1111_0000) | (day << 4));
-    // }
+    /// Replaces the day of this `Mdf`, keeping the month and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `day > 31`.
+    pub fn with_day(self: Self, _day: u32) Mdf {
+        if (_day > 31) {
+            return null;
+        }
+        return Mdf.new_value((self.value & !0b1_1111_0000) | (_day << 4));
+    }
 
-    // /// Replaces the flags of this `Mdf`, keeping the month and day.
-    // pub fn with_flags(self: Self, yearFlags: YearFlags) Mdf {
-    //     return Mdf.new_value((self.value & !0b1111) | yearFlags.value);
-    // }
+    /// Replaces the flags of this `Mdf`, keeping the month and day.
+    pub fn with_flags(self: Self, yearFlags: YearFlags) Mdf {
+        return Mdf.new_value((self.value & !0b1111) | yearFlags.value);
+    }
 
 
     // /// Returns the ordinal that corresponds to this `Mdf`.
@@ -356,28 +355,27 @@ pub const Mdf = struct {
     //     return YearFlags.new(self.value & 0b1111);
     // }
 
-    // /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
-    // ///
-    // /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
-    // /// the `Mdl` turns out not to be a valid date.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
-    // /// given month.
-    // pub fn ordinal_and_flags(self: Self) ?i32 {
-    //     const mdl = self.value >> 3;
-    //     const value = switch (MDL_TO_OL[mdl]) {
-    //         XX => null,
-    //         v => Some(self.value - (v << 3)),
-    //     };
-    //     return value;
-    // }
+    /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
+    pub fn ordinal_and_flags(self: Self) ?i32 {
+        const mdl = self.value >> 3;
+        if (MDL_TO_OL[mdl] == XX) {
+            return null;
+        }
+        return self.value - (MDL_TO_OL[mdl] << 3);
+    }
 
-    // fn valid(self: Self) bool {
-    //     const mdl = self.value >> 3;
-    //     return MDL_TO_OL[mdl] > 0;
-    // }
+    fn valid(self: Self) bool {
+        const mdl = self.value >> 3;
+        return MDL_TO_OL[mdl] > 0;
+    }
 
 };
 

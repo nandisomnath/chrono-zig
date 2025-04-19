@@ -32,9 +32,9 @@ const SECS_PER_WEEK: i64 = 604_800;
 // creating custion max i64_max const
 const i64_max = std.math.maxInt(i64);
 
-fn div_mod_floor_64(this: i64, other: i64) struct { i64, i64 } {
-    const div_euclid = std.math.divFloor(i64, this, other) catch unreachable;
-    const m = std.math.mul(i64, div_euclid, other) catch unreachable;
+fn div_mod_floor_64(comptime T: type, this: T, other: T) struct { T, T } {
+    const div_euclid = std.math.divFloor(T, this, other) catch unreachable;
+    const m = std.math.mul(T, div_euclid, other) catch unreachable;
     const rem_euclid = this - m;
     return .{ div_euclid, rem_euclid };
 }

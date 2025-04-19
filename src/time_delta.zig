@@ -206,10 +206,10 @@ pub const TimeDelta = struct {
     // TODO: this function fails in test for overflow edge case fix it
     /// Returns the total number of whole nanoseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
-    pub fn num_nanoseconds(self: Self) i64 {
-        const secs_part = std.math.mul(i64, self.num_seconds(), NANOS_PER_SEC) catch @panic("num_seconds * NANO_PER_SEC has overflowed");
+    pub fn num_nanoseconds(self: Self) i128 {
+        const secs_part = std.math.mul(i128, self.num_seconds(), @intCast(NANOS_PER_SEC)) catch @panic("num_seconds * NANO_PER_SEC has overflowed");
         const nanos_part = self.subsec_nanos();
-        return std.math.add(i64, secs_part, nanos_part) catch @panic("secs_part + nanos_part was overflowed");
+        return std.math.add(i128, secs_part, nanos_part) catch @panic("secs_part + nanos_part was overflowed");
     }
 
     /// Returns the number of nanoseconds in the fractional part of the duration.
@@ -335,12 +335,12 @@ pub const TimeDelta = struct {
 
 /// The minimum possible `TimeDelta`: `-i64_max` milliseconds.
 pub const MIN = TimeDelta{
-    .secs = -i64_max / MILLIS_PER_SEC - 1,
+    .secs = (-i64_max / MILLIS_PER_SEC) - 1,
     .nanos = NANOS_PER_SEC + @rem(-i64_max, MILLIS_PER_SEC) * NANOS_PER_MILLI,
 };
 
 /// The maximum possible `TimeDelta`: `i64_max` milliseconds.
-pub const MAX: TimeDelta = TimeDelta{
+pub const MAX = TimeDelta {
     .secs = i64_max / MILLIS_PER_SEC,
     .nanos = (i64_max % MILLIS_PER_SEC) * NANOS_PER_MILLI,
 };
@@ -615,7 +615,7 @@ test "test_duration_nanoseconds_max_allowed" {
     // by creating a TimeDelta with the maximum number of milliseconds and then
     // checking that the number of nanoseconds matches the storage limit.
     duration = TimeDelta.milliseconds(std.math.maxInt(i64));
-    // _ =  duration.num_nanoseconds();
+    _ =  duration.num_nanoseconds();
     try testing.expectEqual(@as(i128, @intCast(duration.secs)) * NANOS_PER_SEC + @as(i128, @intCast(duration.nanos)), @as(i128, @intCast(i64_max)) * 1_000_000);
 }
 
@@ -623,7 +623,7 @@ test "test_duration_nanoseconds_max_overflow" {
     // This test establishes that a TimeDelta can store more nanoseconds than are
     // representable through the return of duration.num_nanoseconds().
     const duration = TimeDelta.nanoseconds(std.math.maxInt(i64)).add(TimeDelta.nanoseconds(1));
-    // _ =  duration.num_nanoseconds();
+    _ =  duration.num_nanoseconds();
     try testing.expectEqual(@as(i128, @intCast(duration.secs)) * NANOS_PER_SEC + @as(i128, @intCast(duration.nanos)), @as(i128, @intCast(i64_max)) + 1);
    
 }
@@ -639,7 +639,7 @@ test "test_duration_nanoseconds_min_allowed" {
     // by creating a TimeDelta with the minimum number of milliseconds and then
     // checking that the number of nanoseconds matches the storage limit.
     duration = TimeDelta.milliseconds(-std.math.maxInt(i64));
-    // _ =  duration.num_nanoseconds();
+    _ =  duration.num_nanoseconds();
     try testing.expectEqual(@as(i128, @intCast(duration.secs)) * NANOS_PER_SEC + @as(i128, @intCast(duration.nanos)), -@as(i128, @intCast(i64_max)) * 1_000_000);
 }
 
@@ -647,7 +647,7 @@ test "test_duration_nanoseconds_min_underflow" {
     // This test establishes that a TimeDelta can store more nanoseconds than are
     // representable through the return of duration.num_nanoseconds().
     const duration = TimeDelta.nanoseconds(std.math.minInt(i64)).sub(TimeDelta.nanoseconds(1));
-    // _ =  duration.num_nanoseconds();
+    _ =  duration.num_nanoseconds();
     try testing.expectEqual(@as(i128, @intCast(duration.secs)) * NANOS_PER_SEC + @as(i128, @intCast(duration.nanos)), @as(i128, @intCast(std.math.minInt(i64))) - 1);
 }
 
@@ -656,7 +656,7 @@ test "test_max" {
     try testing.expectEqual(MAX, TimeDelta.milliseconds(std.math.maxInt(i64)));
     try testing.expectEqual(MAX.num_milliseconds(), i64_max);
     _ =  MAX.num_microseconds();
-    // _ =  MAX.num_nanoseconds();
+    _ =  MAX.num_nanoseconds();
 }
 
 
@@ -665,7 +665,7 @@ test "test_min" {
     try testing.expectEqual(MIN, TimeDelta.milliseconds(-std.math.maxInt(i64)));
     try testing.expectEqual(MIN.num_milliseconds(), -std.math.maxInt(i64));
     _ =  MIN.num_microseconds();
-    // _ =  MIN.num_nanoseconds();
+    _ =  MIN.num_nanoseconds();
 }
 
 // #[test]

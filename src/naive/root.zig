@@ -6,6 +6,9 @@ const std = @import("std");
 const internals = @import("naive/internals.zig");
 pub const datetime = @import("datetime/root.zig");
 
+pub const date = @import("date.zig");
+pub const NaiveDate = date.NaiveDate;
+
 // pub(crate) mod isoweek;
 // pub(crate) mod time;
 

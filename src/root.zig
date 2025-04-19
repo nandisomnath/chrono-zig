@@ -55,9 +55,8 @@ pub const Duration = TimeDelta;
 
 
 // // mod weekday;
-// const weekday = @import("weekday.zig");
-// pub const Weekday = weekday.Weekday;
-// pub const ParseWeekdayError = weekday.ParseWeekdayError;
+const weekday = @import("weekday.zig");
+pub const Weekday = weekday.Weekday;
 
 
 // // mod weekday_set;
@@ -66,10 +65,10 @@ pub const Duration = TimeDelta;
 
 
 // // mod month;
-// const month = @import("month.zig");
+const month = @import("month.zig");
 // pub const ParseMonthError = month.ParseMonthError;
-// pub const Month = month.Month;
-// pub const Months = month.Month;
+pub const Month = month.Month;
+pub const Months = month.Months;
 
 
 // mod traits;
@@ -121,6 +120,6 @@ const testing = std.testing;
 test {
     _ = time_delta;
     // _ = naive;
-    // _ = weekday;
-    // _ = month;
+    _ = weekday;
+    _ = month;
 }

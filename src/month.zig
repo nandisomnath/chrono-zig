@@ -1,6 +1,6 @@
 
 
-// const NaiveDate = @import("naive.zig");
+const NaiveDate = @import("naive/root.zig").NaiveDate;
 
 // use crate::OutOfRange;
 // use crate::naive::NaiveDate;
@@ -156,90 +156,52 @@ pub const Month = enum(u8) {
         return "December";
     }
 
-    // /// Get the length in days of the month
-    // ///
-    // /// Yields `None` if `year` is out of range for `NaiveDate`.
-    // pub fn num_days(self: Self, year: i32) -> ?u8 {
-    //     Some(match *self {
-    //         Month::January => 31,
-    //         Month::February => match NaiveDate::from_ymd_opt(year, 2, 1)?.leap_year() {
-    //             true => 29,
-    //             false => 28,
-    //         },
-    //         Month::March => 31,
-    //         Month::April => 30,
-    //         Month::May => 31,
-    //         Month::June => 30,
-    //         Month::July => 31,
-    //         Month::August => 31,
-    //         Month::September => 30,
-    //         Month::October => 31,
-    //         Month::November => 30,
-    //         Month::December => 31,
-    //     })
-    // }
+    /// Get the length in days of the month
+    ///
+    /// Yields `None` if `year` is out of range for `NaiveDate`.
+    pub fn num_days(self: Self, year: i32) ?u8 {
+        
+        if (self == .January) { return 31; }
+        if (self == .March) { return 31; }
+        if (self == .April) { return 30; }
+        if (self == .May) { return 31; }
+        if (self == .June) { return 30; }
+        if (self == .July) { return 31; }
+        if (self == .August) { return 31; }
+        if (self == .September) { return 30; }
+        if (self == .October) { return 31; }
+        if (self == .November) { return 30; }
+        if (self == .December) { return 31; }
+        if (self == .February) { 
+            if (NaiveDate.from_ymd_opt(year, 2, 1).?.leap_year()) {
+                return 29;
+            }
+            return 28;
+         }
+    }
+
+        fn try_from(value: u8) Self {
+            return @enumFromInt(value);
+        // match value {
+        //     1 => Ok(Month::January),
+        //     2 => Ok(Month::February),
+        //     3 => Ok(Month::March),
+        //     4 => Ok(Month::April),
+        //     5 => Ok(Month::May),
+        //     6 => Ok(Month::June),
+        //     7 => Ok(Month::July),
+        //     8 => Ok(Month::August),
+        //     9 => Ok(Month::September),
+        //     10 => Ok(Month::October),
+        //     11 => Ok(Month::November),
+        //     12 => Ok(Month::December),
+        //     _ => Err(OutOfRange::new()),
+        // }
+    }
 
 };
 
 
-
-// impl TryFrom<u8> for Month {
-//     type Error = OutOfRange;
-
-//     fn try_from(value: u8) -> Result<Self, Self::Error> {
-//         match value {
-//             1 => Ok(Month::January),
-//             2 => Ok(Month::February),
-//             3 => Ok(Month::March),
-//             4 => Ok(Month::April),
-//             5 => Ok(Month::May),
-//             6 => Ok(Month::June),
-//             7 => Ok(Month::July),
-//             8 => Ok(Month::August),
-//             9 => Ok(Month::September),
-//             10 => Ok(Month::October),
-//             11 => Ok(Month::November),
-//             12 => Ok(Month::December),
-//             _ => Err(OutOfRange::new()),
-//         }
-//     }
-// }
-
-// impl num_traits::FromPrimitive for Month {
-//     /// Returns an `Option<Month>` from a i64, assuming a 1-index, January = 1.
-//     ///
-//     /// `Month::from_i64(n: i64)`: | `1`                  | `2`                   | ... | `12`
-//     /// ---------------------------| -------------------- | --------------------- | ... | -----
-//     /// ``:                        | Some(Month::January) | Some(Month::February) | ... | Some(Month::December)
-//     #[inline]
-//     fn from_u64(n: u64) -> Option<Month> {
-//         Self::from_u32(n as u32)
-//     }
-
-//     #[inline]
-//     fn from_i64(n: i64) -> Option<Month> {
-//         Self::from_u32(n as u32)
-//     }
-
-//     #[inline]
-//     fn from_u32(n: u32) -> Option<Month> {
-//         match n {
-//             1 => Some(Month::January),
-//             2 => Some(Month::February),
-//             3 => Some(Month::March),
-//             4 => Some(Month::April),
-//             5 => Some(Month::May),
-//             6 => Some(Month::June),
-//             7 => Some(Month::July),
-//             8 => Some(Month::August),
-//             9 => Some(Month::September),
-//             10 => Some(Month::October),
-//             11 => Some(Month::November),
-//             12 => Some(Month::December),
-//             _ => None,
-//         }
-//     }
-// }
 
 /// A duration in calendar months
 pub const  Months = struct {
@@ -270,38 +232,18 @@ pub const  Months = struct {
 
 
 
-// /// An error resulting from reading `<Month>` value with `FromStr`.
-// #[derive(Clone, PartialEq, Eq)]
-// pub struct ParseMonthError {
-//     pub(crate) _dummy: (),
-// }
-
-// #[cfg(feature = "std")]
-// impl std::error::Error for ParseMonthError {}
-
-// impl fmt::Display for ParseMonthError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "ParseMonthError {{ .. }}")
-//     }
-// }
-
-// impl fmt::Debug for ParseMonthError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "ParseMonthError {{ .. }}")
-//     }
-// }
 
 
+const std = @import("std");
 const testing = @import("std").testing;
 
 
     // test "test_month_enum_try_from" {
-    //     testing.expect(Month.try_from(1) == Ok(Month::January));
-    //     testing.expect(Month.try_from(2) == Ok(Month::February));
-    //     testing.expect(Month.try_from(12) == Ok(Month::December));
-    //     testing.expect(Month.try_from(13) == Err(OutOfRange::new()));
+    //     try testing.expect(Month.try_from(1) == (Month.January));
+    //     try testing.expect(Month.try_from(2) == (Month.February));
+    //     try testing.expect(Month.try_from(12) == (Month.December));
 
-    //     let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
+    //     const date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
     //     assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
     //     let month = Month::January;
@@ -331,98 +273,27 @@ const testing = @import("std").testing;
 //     }
 
     
-//     test "test_month_enum_succ_pred" {
-//         try testing.expect(.January.succ() == .February);
-//         try testing.expect(.December.succ() == .January);
-//         try testing.expect(.January.pred() == .December);
-//         try testing.expect(.February.pred() == .January);
-//     }
+    test "test_month_enum_succ_pred" {
+        try testing.expect(.January.succ() == .February);
+        try testing.expect(.December.succ() == .January);
+        try testing.expect(.January.pred() == .December);
+        try testing.expect(.February.pred() == .January);
+    }
 
     
 
 
-//     #[test]
-//     fn test_months_as_u32() {
-//         assert_eq!(Months::new(0).as_u32(), 0);
-//         assert_eq!(Months::new(1).as_u32(), 1);
-//         assert_eq!(Months::new(u32::MAX).as_u32(), u32::MAX);
-//     }
 
-//     #[test]
-//     #[cfg(feature = "serde")]
-//     fn test_serde_serialize() {
-//         use Month::*;
-//         use serde_json::to_string;
+    test "test_months_as_u32" {
+        try testing.expectEqual(Months.new(0).as_u32(), 0);
+        try testing.expectEqual(Months.new(1).as_u32(), 1);
+        try testing.expectEqual(Months.new(std.math.maxInt(u32)).as_u32(), std.math.maxInt(u32));
+    }
 
-//         let cases: Vec<(Month, &str)> = vec![
-//             (January, "\"January\""),
-//             (February, "\"February\""),
-//             (March, "\"March\""),
-//             (April, "\"April\""),
-//             (May, "\"May\""),
-//             (June, "\"June\""),
-//             (July, "\"July\""),
-//             (August, "\"August\""),
-//             (September, "\"September\""),
-//             (October, "\"October\""),
-//             (November, "\"November\""),
-//             (December, "\"December\""),
-//         ];
 
-//         for (month, expected_str) in cases {
-//             let string = to_string(&month).unwrap();
-//             assert_eq!(string, expected_str);
-//         }
-//     }
+    test "num_days" {
+        try testing.expectEqual(Month.January.num_days(2020), (31));
+        try testing.expectEqual(Month.February.num_days(2020), (29));
+        try testing.expectEqual(Month.February.num_days(2019), (28));
+    }
 
-//     #[test]
-//     #[cfg(feature = "serde")]
-//     fn test_serde_deserialize() {
-//         use Month::*;
-//         use serde_json::from_str;
-
-//         let cases: Vec<(&str, Month)> = vec![
-//             ("\"january\"", January),
-//             ("\"jan\"", January),
-//             ("\"FeB\"", February),
-//             ("\"MAR\"", March),
-//             ("\"mar\"", March),
-//             ("\"april\"", April),
-//             ("\"may\"", May),
-//             ("\"june\"", June),
-//             ("\"JULY\"", July),
-//             ("\"august\"", August),
-//             ("\"september\"", September),
-//             ("\"October\"", October),
-//             ("\"November\"", November),
-//             ("\"DECEmbEr\"", December),
-//         ];
-
-//         for (string, expected_month) in cases {
-//             let month = from_str::<Month>(string).unwrap();
-//             assert_eq!(month, expected_month);
-//         }
-
-//         let errors: Vec<&str> =
-//             vec!["\"not a month\"", "\"ja\"", "\"Dece\"", "Dec", "\"Augustin\""];
-
-//         for string in errors {
-//             from_str::<Month>(string).unwrap_err();
-//         }
-//     }
-
-//     #[test]
-//     #[cfg(feature = "rkyv-validation")]
-//     fn test_rkyv_validation() {
-//         let month = Month::January;
-//         let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();
-//         assert_eq!(rkyv::from_bytes::<Month>(&bytes).unwrap(), month);
-//     }
-
-//     #[test]
-//     fn num_days() {
-//         assert_eq!(Month::January.num_days(2020), Some(31));
-//         assert_eq!(Month::February.num_days(2020), Some(29));
-//         assert_eq!(Month::February.num_days(2019), Some(28));
-//     }
-// }

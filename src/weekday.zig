@@ -1,5 +1,5 @@
 // use crate::OutOfRange;
-const OutOfRange = @import("root").OutOfRangeError;
+// const OutOfRange = @import("root").OutOfRangeError;
 
 /// The day of week.
 ///
@@ -165,7 +165,7 @@ pub const Weekday = enum(u32) {
         return lhs - rhs;
     }
 
-    fn try_from(value: u8) OutOfRange!Weekday {
+    fn try_from(value: u8) Weekday {
         return @enumFromInt(value);
     }
 };
@@ -173,8 +173,10 @@ pub const Weekday = enum(u32) {
 const testing = @import("std").testing;
 
 test "test_days_since" {
+
+    
     for (0..7) |i| {
-        const base_day = try Weekday.try_from(@intCast(i));
+        const base_day =  Weekday.try_from(@intCast(i));
 
         try testing.expect(base_day.num_days_from_monday() == base_day.days_since(Weekday.Mon));
         try testing.expect(base_day.num_days_from_sunday() == base_day.days_since(Weekday.Sun));

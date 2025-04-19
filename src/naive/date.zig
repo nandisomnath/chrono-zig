@@ -34,7 +34,7 @@ const std = @import("std");
 const internals = @import("internals.zig");
 const weekday = @import("../weekday.zig");
 const month = @import("../month.zig");
-const Days = @import("../naive.zig").Days;
+const Days = @import("root.zig").Days;
 
 const Months = month.Months;
 
@@ -123,7 +123,7 @@ pub const NaiveDate = struct {
         // `NaiveDate`.
         std.debug.assert(((_yof & OL_MASK) >> 3) > 1);
         std.debug.assert(((_yof & OL_MASK) >> 3) <= MAX_OL);
-        std.debug.assert((_yof & 0b111) != 000);
+        std.debug.assert((_yof & 0b111) != 0);
         return NaiveDate {
             .pyof = _yof,
         };
@@ -165,7 +165,7 @@ pub const NaiveDate = struct {
         if (year < MIN_YEAR or year > MAX_YEAR) {
             return null; // Out-of-range
         }
-        return NaiveDate.from_yof((year << 13) | mdf.ordinal_and_flags());
+        return NaiveDate.from_yof((year << 13) | @as(i32, @intCast(mdf.ordinal_and_flags())));
     }
 
   
@@ -194,10 +194,10 @@ pub const NaiveDate = struct {
     /// assert!(from_ymd_opt(400000, 1, 1).is_none());
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) ?NaiveDate {
+    pub fn from_ymd_opt(year: i32, _month: u32, day: u32) ?NaiveDate {
         const flags = YearFlags.from_year(year);
 
-        if (Mdf.new(month, day, flags)) |mdf| {
+        if (Mdf.new(_month, day, flags)) |mdf| {
             return NaiveDate.from_mdf(year, mdf);
         } else {
             return null;
@@ -232,7 +232,7 @@ pub const NaiveDate = struct {
     /// assert!(from_yo_opt(-400000, 1).is_none());
     /// ```
     pub fn from_yo_opt(year: i32, ordinal: u32) ?NaiveDate {
-        var flags = YearFlags.from_year(year);
+        const flags = YearFlags.from_year(year);
         return NaiveDate.from_ordinal_and_flags(year, ordinal, flags);
     }
 
@@ -299,7 +299,7 @@ pub const NaiveDate = struct {
         // const (year, ordinal, flags) = 
         if (weekord <= delta) {
             // ordinal < 1, previous year
-            const prevflags = YearFlags.from_year(year - 1);
+            const prevflags = YearFlags.from_year(_year - 1);
             // (year - 1, weekord + prevflags.ndays() - delta, prevflags)
             return NaiveDate.from_ordinal_and_flags(_year-1, weekord + prevflags.ndays() - delta, prevflags);
         }
@@ -399,8 +399,8 @@ pub const NaiveDate = struct {
         }
         
         var first = NaiveDate.from_ymd_opt(_year, _month, 1).?.weekday();
-        var first_to_dow = (7 + _weekday.number_from_monday() - first.number_from_monday()) % 7;
-        var day = (n - 1) * 7 + first_to_dow + 1;
+        const first_to_dow = (7 + _weekday.number_from_monday() - first.number_from_monday()) % 7;
+        const day = (n - 1) * 7 + first_to_dow + 1;
         return NaiveDate.from_ymd_opt(_year, _month, day);
     }
 
@@ -475,25 +475,25 @@ pub const NaiveDate = struct {
     }
 
     fn diff_months(self: Self, _months: i32)  !NaiveDate {
-        var months = try std.math.add(i32, (self.year() * 12 + self.month() - 1), _months);
+        const months = try std.math.add(i32, (self.year() * 12 + self.month() - 1), _months);
         
-        var year =  try div_euclid(i32, months, 12); //months.div_euclid(12);
-        var month = try rem_euclid(i32, months, 12); //months.rem_euclid(12) as u32 + 1;
+        const year =  try div_euclid(i32, months, 12); //months.div_euclid(12);
+        const _month = try rem_euclid(i32, months, 12); //months.rem_euclid(12) as u32 + 1;
 
         // Clamp original day in case new month is shorter
         var flags = YearFlags.from_year(year);
-        var feb_days = switch (flags.ndays()) {
+        const feb_days = switch (flags.ndays()) {
             366 => 29,
             else => 28
         };
-        var days = [_]i32{31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        var day_max = days[(month - 1)];
+        const days = [_]i32{31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        const day_max = days[(_month - 1)];
         var day = self.day();
         if (day > day_max) {
             day = day_max;
         }
 
-        return NaiveDate.from_ymd_opt(year, month, day);
+        return NaiveDate.from_ymd_opt(year, _month, day);
     }
 
     /// Add a duration in [`Days`] to the date
@@ -2111,10 +2111,10 @@ fn yo_to_cycle(year_mod_400: u32, ordinal: u32) u32 {
 
 
 fn div_mod_floor(this: i32, other: i32) struct {i32, i32} {
-    const div_euclid = try std.math.divFloor(i32, this, other);
-    const m = try std.math.mul(i32, div_euclid, other);
-    const rem_euclid = this - m;
-    return .{div_euclid, rem_euclid};
+    const _div_euclid = div_euclid(i32, this, other) catch unreachable;
+    const _rem_euclid = rem_euclid(i32,  this, other) catch unreachable;
+
+    return .{_div_euclid, _rem_euclid};
 }
 
 /// MAX_YEAR is one year less than the type is capable of representing. Internally we may sometimes

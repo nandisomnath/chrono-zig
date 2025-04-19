@@ -101,7 +101,7 @@ pub const Month = enum(u8) {
         if (self == .December) {return .November; }
 
         // not occur
-        return .Movember;
+        return .November;
         
     }
 
@@ -159,7 +159,7 @@ pub const Month = enum(u8) {
     /// Get the length in days of the month
     ///
     /// Yields `None` if `year` is out of range for `NaiveDate`.
-    pub fn num_days(self: Self, year: i32) ?u8 {
+    pub fn num_days(self: Self, year: i32) u8 {
         
         if (self == .January) { return 31; }
         if (self == .March) { return 31; }
@@ -178,6 +178,9 @@ pub const Month = enum(u8) {
             }
             return 28;
          }
+
+         // not occur
+         return 1;
     }
 
         fn try_from(value: u8) Self {
@@ -274,10 +277,10 @@ const testing = @import("std").testing;
 
     
     test "test_month_enum_succ_pred" {
-        try testing.expect(.January.succ() == .February);
-        try testing.expect(.December.succ() == .January);
-        try testing.expect(.January.pred() == .December);
-        try testing.expect(.February.pred() == .January);
+        try testing.expect(Month.January.succ() == .February);
+        try testing.expect(Month.December.succ() == .January);
+        try testing.expect(Month.January.pred() == .December);
+        try testing.expect(Month.February.pred() == .January);
     }
 
     

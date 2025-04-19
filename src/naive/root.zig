@@ -3,8 +3,8 @@ const std = @import("std");
 
 
 // pub const date = @import("naive/date.zig");
-const internals = @import("naive/internals.zig");
-pub const datetime = @import("datetime/root.zig");
+const internals = @import("internals.zig");
+// pub const datetime = @import("datetime/root.zig");
 
 pub const date = @import("date.zig");
 pub const NaiveDate = date.NaiveDate;

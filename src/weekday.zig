@@ -1,4 +1,5 @@
 // use crate::OutOfRange;
+const OutOfRange = @import("root").OutOfRangeError;
 
 /// The day of week.
 ///
@@ -67,17 +68,6 @@ pub const Weekday = enum(u32) {
 
         // not occur
         return .Mon;
-
-        // const value = switch (self) {
-        //     .Mon => .Tue,
-        //     .Tue => .Wed,
-        //     .Wed => .Thu,
-        //     .Thu => .Fri,
-        //     .Fri => .Sat,
-        //     .Sat => .Sun,
-        //     .Sun => .Mon,
-        // };
-        // return value;
     }
 
     /// The previous day in the week.
@@ -104,16 +94,6 @@ pub const Weekday = enum(u32) {
 
         // This case will never occur but
         return .Mon;
-
-        // switch (self) {
-        //     .Mon => .Sun,
-        //     .Tue => .Mon,
-        //     .Wed => .Tue,
-        //     .Thu => .Wed,
-        //     .Fri => .Thu,
-        //     .Sat => .Fri,
-        //     .Sun => .Sat,
-        // }
     }
 
     /// Returns a day-of-week number starting from Monday = 1. (ISO 8601 weekday number)
@@ -185,36 +165,10 @@ pub const Weekday = enum(u32) {
         return lhs - rhs;
     }
 
-    fn try_from(value: u8) !Weekday {
+    fn try_from(value: u8) OutOfRange!Weekday {
         return @enumFromInt(value);
-        // const v = switch (value) {
-        //     0 => .Mon,
-        //     1 => .Tue,
-        //     2 => .Wed,
-        //     3 => .Thu,
-        //     4 => .Fri,
-        //     5 => .Sat,
-        //     6 => .Sun,
-        //     else => .Mon,
-        //     // else => .OutOfRange,
-        // };
-        // return v;
     }
 };
-
-// impl fmt::Display for Weekday {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         f.pad(match *self {
-//             Weekday::Mon => "Mon",
-//             Weekday::Tue => "Tue",
-//             Weekday::Wed => "Wed",
-//             Weekday::Thu => "Thu",
-//             Weekday::Fri => "Fri",
-//             Weekday::Sat => "Sat",
-//             Weekday::Sun => "Sun",
-//         })
-//     }
-// }
 
 const testing = @import("std").testing;
 

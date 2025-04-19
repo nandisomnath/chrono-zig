@@ -1,16 +1,11 @@
-//! Date and time types unconcerned with timezones.
-//!
-//! They are primarily building blocks for other types
-//! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
-//! but can be also used for the simpler date and time handling.
+const std = @import("std");
 
 
 
 // pub const date = @import("naive/date.zig");
-pub const internals = @import("naive/internals.zig");
+const internals = @import("naive/internals.zig");
+pub const datetime = @import("datetime/root.zig");
 
-// pub(crate) mod datetime;
-// mod internals;
 // pub(crate) mod isoweek;
 // pub(crate) mod time;
 
@@ -238,16 +233,7 @@ pub const Days = struct{
 };
 
 
-// /// Serialization/Deserialization of `NaiveDateTime` in alternate formats
-// ///
-// /// The various modules in here are intended to be used with serde's [`with` annotation] to
-// /// serialize as something other than the default ISO 8601 format.
-// ///
-// /// [`with` annotation]: https://serde.rs/field-attrs.html#with
-// #[cfg(feature = "serde")]
-// pub mod serde {
-//     pub use super::datetime::serde::*;
-// }
+
 
 // #[cfg(test)]
 // mod test {

@@ -22,7 +22,10 @@ pub const MIN_DATETIME = date.MIN_DATETIME;
 // pub mod format;
 pub const format = @import("format/root.zig");
 pub const Locale = format.Locale;
-// pub use format::{ParseError, ParseResult, SecondsFormat};
+pub const ParseError = format.ParseError;
+pub const ParseResult = format.ParseResult;
+pub const SecondsFormat = format.SecondsFormat;
+
 
 // pub mod naive;
 pub const naive = @import("naive/root.zig");

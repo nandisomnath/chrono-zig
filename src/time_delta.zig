@@ -58,15 +58,6 @@ pub const TimeDeltaError =  error  {
 // nanoseconds. The range is restricted to that of `i64` milliseconds, with the
 // minimum value notably being set to `-i64::MAX` rather than allowing the full
 // range of `i64::MIN`. This is to allow easy flipping of sign, so that for
-
-// #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
-// #[cfg_attr(
-//     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-//     derive(Archive, Deserialize, Serialize),
-//     archive(compare(PartialEq, PartialOrd)),
-//     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-// )]
-// #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub const  TimeDelta = struct {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC

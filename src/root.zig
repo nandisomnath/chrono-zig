@@ -28,12 +28,12 @@ pub const Duration = TimeDelta;
 
 
 // // pub mod naive;
-// pub const naive = @import("naive/root.zig");
+pub const naive = @import("naive/root.zig");
 // pub const Days = naive.Days ;
-// pub const NaiveDate = naive.NaiveDate ;
+pub const NaiveDate = naive.NaiveDate ;
 // pub const NaiveDateTime= naive.NaiveDateTime ;
 // pub const NaiveTime = naive.NaiveTime ;
-// pub const IsoWeek = naive.IsoWeek ;
+pub const IsoWeek = naive.IsoWeek ;
 // pub const NaiveWeek = naive.NaiveWeek ;
 
 // // pub mod offset;
@@ -119,7 +119,7 @@ const testing = std.testing;
 
 test {
     _ = time_delta;
-    // _ = naive;
+    _ = naive;
     _ = weekday;
     _ = month;
 }

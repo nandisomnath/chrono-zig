@@ -121,8 +121,8 @@ pub const NaiveDate = struct {
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
     pub const MAX: NaiveDate = NaiveDate.from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16);
 
-    pub fn weeks_from(self: Self, day: Weekday) i32 {
-        return self.ordinal() - self.weekday().days_since(day) + 6 / 7;
+    pub fn weeks_from(self: Self, _day: Weekday) i32 {
+        return self.ordinal() - self.weekday().days_since(_day) + 6 / 7;
     }
 
 
@@ -147,18 +147,18 @@ pub const NaiveDate = struct {
     }
 
     fn from_ordinal_and_flags(
-        year: i32,
-        ordinal: u32,
+        _year: i32,
+        _ordinal: u32,
         flags: YearFlags,
     ) ?NaiveDate {
-        if (year < MIN_YEAR or year > MAX_YEAR) {
+        if (_year < MIN_YEAR or _year > MAX_YEAR) {
             return null; // Out-of-range
         }
-        if (ordinal == 0 or ordinal > 366) {
+        if (_ordinal == 0 or _ordinal > 366) {
             return null; // Invalid
         }
-        std.debug.assert(YearFlags.from_year(year).value == flags.value);
-        const _yof = (year << 13) | (ordinal << 4) | flags.value;
+        std.debug.assert(YearFlags.from_year(_year).value == flags.value);
+        const _yof = (_year << 13) | (_ordinal << 4) | flags.value;
         if (_yof & OL_MASK <= MAX_OL) {
             return NaiveDate.from_yof(_yof);
         } else {
@@ -173,11 +173,11 @@ pub const NaiveDate = struct {
     /// Does not check whether the flags are correct for the provided year.
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
-    fn from_mdf(year: i32, mdf: Mdf) ?NaiveDate {
-        if (year < MIN_YEAR or year > MAX_YEAR) {
+    fn from_mdf(_year: i32, _mdf: Mdf) ?NaiveDate {
+        if (_year < MIN_YEAR or _year > MAX_YEAR) {
             return null; // Out-of-range
         }
-        return NaiveDate.from_yof((year << 13) | @as(i32, @intCast(mdf.ordinal_and_flags())));
+        return NaiveDate.from_yof((_year << 13) | @as(i32, @intCast(_mdf.ordinal_and_flags())));
     }
 
   
@@ -206,11 +206,11 @@ pub const NaiveDate = struct {
     /// assert!(from_ymd_opt(400000, 1, 1).is_none());
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
-    pub fn from_ymd_opt(year: i32, _month: u32, day: u32) ?NaiveDate {
-        const flags = YearFlags.from_year(year);
+    pub fn from_ymd_opt(_year: i32, _month: u32, _day: u32) ?NaiveDate {
+        const flags = YearFlags.from_year(_year);
 
-        if (Mdf.new(_month, day, flags)) |mdf| {
-            return NaiveDate.from_mdf(year, mdf);
+        if (Mdf.new(_month, _day, flags)) |_mdf| {
+            return NaiveDate.from_mdf(_year, _mdf);
         } else {
             return null;
         }
@@ -243,9 +243,9 @@ pub const NaiveDate = struct {
     /// assert!(from_yo_opt(400000, 1).is_none());
     /// assert!(from_yo_opt(-400000, 1).is_none());
     /// ```
-    pub fn from_yo_opt(year: i32, ordinal: u32) ?NaiveDate {
-        const flags = YearFlags.from_year(year);
-        return NaiveDate.from_ordinal_and_flags(year, ordinal, flags);
+    pub fn from_yo_opt(_year: i32, _ordinal: u32) ?NaiveDate {
+        const flags = YearFlags.from_year(_year);
+        return NaiveDate.from_ordinal_and_flags(_year, _ordinal, flags);
     }
 
 
@@ -316,18 +316,18 @@ pub const NaiveDate = struct {
             return NaiveDate.from_ordinal_and_flags(_year-1, weekord + prevflags.ndays() - delta, prevflags);
         }
 
-        const ordinal = weekord - delta;
+        const _ordinal = weekord - delta;
         const ndays = flags.ndays();
-        if (ordinal <= ndays) {
+        if (_ordinal <= ndays) {
             // this year
             // (year, ordinal, flags)
-            return NaiveDate.from_ordinal_and_flags(_year, ordinal, flags);
+            return NaiveDate.from_ordinal_and_flags(_year, _ordinal, flags);
         } 
 
         // ordinal > ndays, next year
         const nextflags = YearFlags.from_year(_year + 1);
         // (year + 1, ordinal - ndays, nextflags)
-        return NaiveDate.from_ordinal_and_flags(_year+1, ordinal-ndays, nextflags);
+        return NaiveDate.from_ordinal_and_flags(_year+1, _ordinal-ndays, nextflags);
     
     }
 
@@ -359,9 +359,9 @@ pub const NaiveDate = struct {
         const days = try std.math.add(i32, _days, 365); // make December 31, 1 BCE equal to day 0
         const year_div_400 =  try div_euclid(i32, days, 146_097);// days.div_euclid(146_097);
         const cycle =  try rem_euclid(i32, days, 146_097);//days.rem_euclid(146_097);
-        const year_mod_400, const ordinal = cycle_to_yo(cycle);
+        const year_mod_400, const _ordinal = cycle_to_yo(cycle);
         const flags = YearFlags.from_year_mod_400(year_mod_400);
-        return NaiveDate.from_ordinal_and_flags(year_div_400 * 400 + year_mod_400, ordinal, flags);
+        return NaiveDate.from_ordinal_and_flags(year_div_400 * 400 + year_mod_400, _ordinal, flags);
     }
 
     /// Returns the day of week.
@@ -412,8 +412,8 @@ pub const NaiveDate = struct {
         
         var first = NaiveDate.from_ymd_opt(_year, _month, 1).?.weekday();
         const first_to_dow = (7 + _weekday.number_from_monday() - first.number_from_monday()) % 7;
-        const day = (n - 1) * 7 + first_to_dow + 1;
-        return NaiveDate.from_ymd_opt(_year, _month, day);
+        const _day = (n - 1) * 7 + first_to_dow + 1;
+        return NaiveDate.from_ymd_opt(_year, _month, _day);
     }
 
 
@@ -489,23 +489,23 @@ pub const NaiveDate = struct {
     fn diff_months(self: Self, _months: i32)  !NaiveDate {
         const months = try std.math.add(i32, (self.year() * 12 + self.month() - 1), _months);
         
-        const year =  try div_euclid(i32, months, 12); //months.div_euclid(12);
+        const _year =  try div_euclid(i32, months, 12); //months.div_euclid(12);
         const _month = try rem_euclid(i32, months, 12); //months.rem_euclid(12) as u32 + 1;
 
         // Clamp original day in case new month is shorter
-        var flags = YearFlags.from_year(year);
+        var flags = YearFlags.from_year(_year);
         const feb_days = switch (flags.ndays()) {
             366 => 29,
             else => 28
         };
         const days = [_]i32{31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         const day_max = days[(_month - 1)];
-        var day = self.day();
-        if (day > day_max) {
-            day = day_max;
+        var _day = self.day();
+        if (_day > day_max) {
+            _day = day_max;
         }
 
-        return NaiveDate.from_ymd_opt(year, _month, day);
+        return NaiveDate.from_ymd_opt(_year, _month, _day);
     }
 
     /// Add a duration in [`Days`] to the date
@@ -579,8 +579,43 @@ pub const NaiveDate = struct {
         return self.yof() & (0b1000) == 0;
     }
 
-    fn iso_week(self: Self) IsoWeek {
+    pub fn iso_week(self: Self) IsoWeek {
         return IsoWeek.from_yof(self.year(), self.ordinal(), self.year_flags());
+    }
+
+
+    // This duplicates `Datelike::year()`, because trait methods can't be const yet.
+
+    fn year(self: Self)  i32 {
+        return self.yof() >> 13;
+    }
+
+    /// Returns the day of year starting from 1.
+    // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
+    fn ordinal(self: Self) u32 {
+        return (@as(u32, @intCast(self.yof() & ORDINAL_MASK)) >> 4);
+    }
+
+    // This duplicates `Datelike::month()`, because trait methods can't be const yet.
+
+    fn month(self: Self) u32 {
+        return self.mdf().month();
+    }
+
+    // This duplicates `Datelike::day()`, because trait methods can't be const yet.
+    fn day(self: Self) u32 {
+        return self.mdf().day();
+    }
+
+    
+    /// Returns the packed month-day-flags.
+    fn mdf(self: Self) Mdf {
+        Mdf.from_ol((self.yof() & OL_MASK) >> 3, self.year_flags());
+    }
+
+
+    fn year_flags(self: Self) YearFlags {
+        return YearFlags.new(@intCast((self.yof() & YEAR_FLAGS_MASK)));
     }
 
 };
@@ -770,12 +805,6 @@ pub const NaiveDate = struct {
 //     ) -> Option<NaiveDateTime> {
 //         let time = try_opt!(NaiveTime::from_hms_nano_opt(hour, min, sec, nano));
 //         Some(self.and_time(time))
-//     }
-
-//     /// Returns the packed month-day-flags.
-//     #[inline]
-//     const fn mdf(&self) -> Mdf {
-//         Mdf::from_ol((self.yof() & OL_MASK) >> 3, self.year_flags())
 //     }
 
 //     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -1166,37 +1195,7 @@ pub const NaiveDate = struct {
 
    
 
-//     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
-//     #[inline]
-//     const fn year(&self) -> i32 {
-//         self.yof() >> 13
-//     }
 
-//     /// Returns the day of year starting from 1.
-//     // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
-//     #[inline]
-//     const fn ordinal(&self) -> u32 {
-//         ((self.yof() & ORDINAL_MASK) >> 4) as u32
-//     }
-
-//     // This duplicates `Datelike::month()`, because trait methods can't be const yet.
-//     #[inline]
-//     const fn month(&self) -> u32 {
-//         self.mdf().month()
-//     }
-
-//     // This duplicates `Datelike::day()`, because trait methods can't be const yet.
-//     #[inline]
-//     const fn day(&self) -> u32 {
-//         self.mdf().day()
-//     }
-
-    
-
-//     #[inline]
-//     const fn year_flags(&self) -> YearFlags {
-//         YearFlags((self.yof() & YEAR_FLAGS_MASK) as u8)
-//     }
 
 //     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
 //     // This duplicates `Datelike::num_days_from_ce()`, because trait methods can't be const yet.

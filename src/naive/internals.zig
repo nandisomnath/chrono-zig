@@ -31,7 +31,7 @@ pub const YearFlags = struct {
     }
 
     pub fn from_year(_year: i32) YearFlags {
-        const year = rem_euclid(_year, 400);
+        const year = rem_euclid(_year, 400); 
         return YearFlags.from_year_mod_400(year);
     }
 

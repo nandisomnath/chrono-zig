@@ -10,6 +10,11 @@ pub const YearFlags = internals.YearFlags;
 pub const date = @import("date.zig");
 pub const NaiveDate = date.NaiveDate;
 
+test  {
+    _ = internals;
+    _ = date;
+}
+
 // pub(crate) mod isoweek;
 // pub(crate) mod time;
 
@@ -18,10 +23,13 @@ pub const NaiveDate = date.NaiveDate;
 // pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 // #[allow(deprecated)]
 // pub use self::datetime::{MAX_DATETIME, MIN_DATETIME, NaiveDateTime};
-// pub use self::isoweek::IsoWeek;
+pub const isoweek = @import("isoweek.zig");
+pub const IsoWeek = isoweek.IsoWeek;
 // pub use self::time::NaiveTime;
 
-
+test  {
+    _ = isoweek;
+}
 
 
 // #[cfg(feature = "__internal_bench")]

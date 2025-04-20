@@ -29,6 +29,9 @@
 // mod tests;
 
 
+//a >> b == a / 2.pow(b)
+
+
 // the zig support for max 
 const std = @import("std");
 const internals = @import("internals.zig");

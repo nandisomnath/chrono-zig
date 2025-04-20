@@ -16,7 +16,7 @@ pub const YearFlags = struct {
     value: u32,
     const Self = @This();
     pub fn new(value: u32) YearFlags {
-        return YearFlags {
+        return YearFlags{
             .value = value,
         };
     }
@@ -29,24 +29,19 @@ pub const YearFlags = struct {
         return self.value;
     }
 
-
-
     pub fn from_year(_year: i32) YearFlags {
         const year = rem_euclid(_year, 400);
         return YearFlags.from_year_mod_400(year);
     }
 
-
-    pub  fn from_year_mod_400(year: i32) YearFlags {
+    pub fn from_year_mod_400(year: i32) YearFlags {
         return YEAR_TO_FLAGS[@intCast(year)];
     }
-
 
     pub fn ndays(self: Self) u32 {
         return 366 - (self.value >> 3);
     }
 
- 
     pub fn isoweek_delta(self: Self) u32 {
         // let YearFlags(flags) = *self;
         var delta = self.value & 0b0111;
@@ -56,13 +51,11 @@ pub const YearFlags = struct {
         return delta;
     }
 
-    // TODO: find a left shift and right shift alternative 
-    // pub fn nisoweeks(self: Self) u32 {
-    //     // let YearFlags(flags) = *self;
-    //     const value: u32 = (0b0000_0100_0000_0110 >> self.value);
-    //     return 52 + (value & 1);
-    // }
-
+    // TODO: find a left shift and right shift alternative
+    pub fn nisoweeks(self: Self) u32 {
+        const value = 0b0000_0100_0000_0110 / std.math.pow(u32, 2, self.value); //>> self.value);
+        return 52 + (value & 1);
+    }
 };
 
 // Weekday of the last day in the preceding year.
@@ -94,28 +87,39 @@ pub const G = YearFlags.new(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
 pub const GF = YearFlags.new(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
 
 const YEAR_TO_FLAGS = [_]YearFlags{
-    BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
-    G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G,
-    F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F,
-    E, DC, B, A, G, FE, D, C, B, AG, F, E, D, // 100
-    C, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC,
-    B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B,
-    A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A,
-    G, FE, D, C, B, AG, F, E, D, CB, A, G, F, // 200
-    E, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE,
-    D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D,
-    C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C,
-    B, AG, F, E, D, CB, A, G, F, ED, C, B, A, // 300
-    G, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG,
-    F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F,
-    E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E,
+    BA, G, F,  E,  DC, B, A,  G,  FE, D, C,  B,  AG, F, E,  D,  CB, A, G,  F,  ED, C, B,  A,  GF, E, D,  C,  BA,
+    G,  F, E,  DC, B,  A, G,  FE, D,  C, B,  AG, F,  E, D,  CB, A,  G, F,  ED, C,  B, A,  GF, E,  D, C,  BA, G,
+    F,  E, DC, B,  A,  G, FE, D,  C,  B, AG, F,  E,  D, CB, A,  G,  F, ED, C,  B,  A, GF, E,  D,  C, BA, G,  F,
+    E,  DC, B,  A,  G,  FE, D,  C,  B,  AG, F,  E,  D, // 100
+    C,  B,  A,  G,  FE, D,  C,  B,  AG, F,  E,  D,  CB,
+    A,  G,  F,  ED, C,  B,  A,  GF, E,  D,  C,  BA, G,
+    F,  E,  DC, B,  A,  G,  FE, D,  C,  B,  AG, F,  E,
+    D,  CB, A,  G,  F,  ED, C,  B,  A,  GF, E,  D,  C,
+    BA, G,  F,  E,  DC, B,  A,  G,  FE, D,  C,  B,  AG,
+    F,  E,  D,  CB, A,  G,  F,  ED, C,  B,  A,  GF, E,
+    D,  C,  BA, G,  F,  E,  DC, B,  A,
+    G,  FE, D,  C,  B,  AG, F,  E,  D,  CB, A,  G,  F, // 200
+    E,  D,  C,  B,  AG, F,  E,  D,  CB, A,  G,  F,  ED,
+    C,  B,  A,  GF, E,  D,  C,  BA, G,  F,  E,  DC, B,
+    A,  G,  FE, D,  C,  B,  AG, F,  E,  D,  CB, A,  G,
+    F,  ED, C,  B,  A,  GF, E,  D,  C,  BA, G,  F,  E,
+    DC, B,  A,  G,  FE, D,  C,  B,  AG, F,  E,  D,  CB,
+    A,  G,  F,  ED, C,  B,  A,  GF, E,  D,  C,  BA, G,
+    F,  E,  DC, B,  A,  G,  FE, D,  C,
+    B,  AG, F,  E,  D,  CB, A,  G,  F,  ED, C,  B,  A, // 300
+    G,  F,  E,  D,  CB, A,  G,  F,  ED, C,  B,  A,  GF,
+    E,  D,  C,  BA, G,  F,  E,  DC, B,  A,  G,  FE, D,
+    C,  B,  AG, F,  E,  D,  CB, A,  G,  F,  ED, C,  B,
+    A,  GF, E,  D,  C,  BA, G,  F,  E,  DC, B,  A,  G,
+    FE, D,  C,  B,  AG, F,  E,  D,  CB, A,  G,  F,  ED,
+    C,  B,  A,  GF, E,  D,  C,  BA, G,  F,  E,  DC, B,
+    A,  G,  FE, D,  C,  B,  AG, F,  E,
     D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
 };
 
 fn rem_euclid(this: i32, other: i32) i32 {
     return @mod(this, other);
 }
-
 
 // impl fmt::Debug for YearFlags {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -154,83 +158,142 @@ const MDL_TO_OL = [_]u32{
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, // 0
-    XX, XX, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    XX, XX, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 1
-    XX, XX, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
-    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    XX, XX, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
     66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, XX, XX, XX, XX, XX, // 2
-    XX, XX, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
-    72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
+    XX, XX, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
+    72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
+    72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
     72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, // 3
-    XX, XX, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
-    74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
+    XX, XX, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
+    74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
+    74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
     74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, XX, XX, // 4
-    XX, XX, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
-    78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
+    XX, XX, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
+    78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
+    78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
     78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, // 5
-    XX, XX, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
-    80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
+    XX, XX, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
+    80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
+    80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
     80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, XX, XX, // 6
-    XX, XX, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
-    84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
+    XX, XX, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
+    84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
+    84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
     84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, // 7
-    XX, XX, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
-    86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
+    XX, XX, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
+    86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
+    86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
     86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, // 8
-    XX, XX, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
-    88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
+    XX, XX, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
+    88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
+    88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
     88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, XX, XX, // 9
-    XX, XX, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
-    92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
+    XX, XX, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
+    92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
+    92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
     92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, // 10
-    XX, XX, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
-    94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
-    94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, XX, XX, // 11
-    XX, XX, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
-    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
-    98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    XX, XX, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
+    94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
+    94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
+    94, 96,  94, 96,  94, 96,  94, 96,  94, 96,  94, 96,  94, 96,  XX, XX, // 11
+    XX, XX,  98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
+    98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
+    98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
+    98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
     100, // 12
 };
 
-const OL_TO_MDL= [_]u8{
-    0, 0, // 0
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+const OL_TO_MDL = [_]u8{
+    0,  0, // 0
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
+    64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 1
-    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
-    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    66, 66, 66, 66, 66, 66,
     66, 66, 66, 66, 66, 66, 66, 66, 66, // 2
-    74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72,
-    74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72,
+    74, 72, 74, 72, 74, 72, 74, 72, 74,
+    72, 74, 72, 74, 72, 74, 72, 74, 72,
+    74, 72, 74, 72, 74, 72, 74, 72, 74,
+    72, 74, 72, 74, 72, 74, 72, 74, 72,
+    74, 72, 74, 72, 74, 72, 74, 72, 74,
+    72, 74, 72,
     74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, // 3
-    76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74,
-    76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74,
+    76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74,
+    76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74,
+    76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74,
+    76, 74, 76, 74, 76, 74,
     76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, // 4
-    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
-    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
+    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
+    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
+    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
+    80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78,
     80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, // 5
-    82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80,
-    82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80,
+    82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80,
+    82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80,
+    82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80,
+    82, 80, 82, 80, 82, 80,
     82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, // 6
-    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
-    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
+    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
+    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
+    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
+    86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84,
     86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, // 7
-    88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86,
-    88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86,
+    88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86,
+    88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86,
+    88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86,
+    88, 86, 88, 86, 88, 86,
     88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, // 8
-    90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88,
-    90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88,
+    90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88,
+    90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88,
+    90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88,
+    90, 88, 90, 88, 90, 88,
     90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, // 9
-    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
-    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
+    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
+    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
+    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
+    94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92,
     94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, // 10
-    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94,
-    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94,
-    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, // 11
-    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
-    98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
-    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
+    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94,
+    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94,
+    96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94,
+    96, 94, 96, 94, 96, 94,
+    96,  94, 96,  94, 96,  94, 96,  94, 96,  94, 96,  94, // 11
+    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    100,
     98, // 12
 };
 
@@ -252,7 +315,7 @@ pub const Mdf = struct {
 
     const Self = @This();
     pub fn new_value(value: u32) Mdf {
-        return Self {
+        return Self{
             .value = value,
         };
     }
@@ -265,7 +328,6 @@ pub const Mdf = struct {
         return self.value;
     }
 
-
     /// Makes a new `Mdf` value from month, day and `YearFlags`.
     ///
     /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
@@ -275,10 +337,11 @@ pub const Mdf = struct {
     ///
     /// Returns `None` if `month > 12` or `day > 31`.
     pub fn new(_month: u32, _day: u32, yearFlags: YearFlags) ?Mdf {
-        if (_month <= 12 and _day <= 31) {
-            return Mdf.new_value((_month << 9) | (_day << 4) | yearFlags.get());
+        // std.debug.print("month = {any}, day={any}\n", .{ _month, _day });
+        if (_month > 12 or _day > 31) {
+            return null;
         }
-        return null;
+        return Mdf.new_value((_month << 9) | (_day << 4) | yearFlags.get());
     }
 
     /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
@@ -288,7 +351,7 @@ pub const Mdf = struct {
     pub fn from_ol(ol: i32, yearFlags: YearFlags) Mdf {
         std.debug.assert(ol > 1 and ol <= MAX_OL);
         // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
-        return Mdf.new_value(((ol + OL_TO_MDL[ol]) << 3) |  yearFlags.get());
+        return Mdf.new_value(((ol + OL_TO_MDL[ol]) << 3) | yearFlags.get());
     }
 
     /// Returns the month of this `Mdf`.
@@ -318,41 +381,40 @@ pub const Mdf = struct {
     /// # Errors
     ///
     /// Returns `None` if `day > 31`.
-    pub fn with_day(self: Self, _day: u32) Mdf {
+    pub fn with_day(self: Self, _day: u32) ?Mdf {
         if (_day > 31) {
             return null;
         }
-        return Mdf.new_value((self.value & !0b1_1111_0000) | (_day << 4));
+        return Mdf.new_value((self.value & ~@as(u32, 0b1_1111_0000)) | (_day << 4));
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
     pub fn with_flags(self: Self, yearFlags: YearFlags) Mdf {
-        return Mdf.new_value((self.value & !0b1111) | yearFlags.value);
+        return Mdf.new_value((self.value & ~0b1111) | yearFlags.value);
     }
 
+    /// Returns the ordinal that corresponds to this `Mdf`.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
+    pub fn ordinal(self: Self) ?u32 {
+        const mdl = self.value / std.math.pow(u32, 2, 3); //>> 3;
 
-    // /// Returns the ordinal that corresponds to this `Mdf`.
-    // ///
-    // /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
-    // /// the `Mdl` turns out not to be a valid date.
-    // ///
-    // /// # Errors
-    // ///
-    // /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
-    // /// given month.
-    // pub fn ordinal(self: Self) ?u32 {
-    //     const mdl = self.value >> 3;
-    //     const value = switch (MDL_TO_OL[mdl]) {
-    //         XX => null,
-    //         v => (mdl - v) >> 1,
-    //     };
-    //     return value;
-    // }
+        if (XX == self) {
+            return XX;
+        }
+        return (mdl - MDL_TO_OL[mdl]) / std.math.pow(u32, 2, 1);
+    }
 
-    // /// Returns the year flags of this `Mdf`.
-    // pub fn year_flags(self: Self) YearFlags {
-    //     return YearFlags.new(self.value & 0b1111);
-    // }
+    /// Returns the year flags of this `Mdf`.
+    pub fn year_flags(self: Self) YearFlags {
+        return YearFlags.new(self.value & 0b1111);
+    }
 
     /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
     ///
@@ -375,10 +437,7 @@ pub const Mdf = struct {
         const mdl = self.value >> 3;
         return MDL_TO_OL[mdl] > 0;
     }
-
 };
-
-
 
 // impl fmt::Debug for Mdf {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -394,16 +453,14 @@ pub const Mdf = struct {
 //     }
 // }
 
+// use super::Mdf;
+// use super::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF, YearFlags};
 
-    // use super::Mdf;
-    // use super::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF, YearFlags};
-
-const NONLEAP_FLAGS = [_]YearFlags{A, B, C, D, E, F, G};
-const LEAP_FLAGS = [_]YearFlags{AG, BA, CB, DC, ED, FE, GF};
-const FLAGS = [_]YearFlags{A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
+const NONLEAP_FLAGS = [_]YearFlags{ A, B, C, D, E, F, G };
+const LEAP_FLAGS = [_]YearFlags{ AG, BA, CB, DC, ED, FE, GF };
+const FLAGS = [_]YearFlags{ A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF };
 
 const testing = @import("std").testing;
-
 
 test "test_year_flags_ndays_from_year" {
     try testing.expect(YearFlags.from_year(2014).ndays() == 365);
@@ -421,188 +478,182 @@ test "test_year_flags_ndays_from_year" {
     try testing.expect(YearFlags.from_year(-400).ndays() == 366); // 401 BCE
 }
 
- 
-// test "test_year_flags_nisoweeks" {
-//     try testing.expect(A.nisoweeks() == 52);
-//     try testing.expect(B.nisoweeks() == 52);
-//     try testing.expect(C.nisoweeks() == 52);
-//     try testing.expect(D.nisoweeks() == 53);
-//     try testing.expect(E.nisoweeks() == 52);
-//     try testing.expect(F.nisoweeks() == 52);
-//     try testing.expect(G.nisoweeks() == 52);
-//     try testing.expect(AG.nisoweeks() == 52);
-//     try testing.expect(BA.nisoweeks() == 52);
-//     try testing.expect(CB.nisoweeks() == 52);
-//     try testing.expect(DC.nisoweeks() == 53);
-//     try testing.expect(ED.nisoweeks() == 53);
-//     try testing.expect(FE.nisoweeks() == 52);
-//     try testing.expect(GF.nisoweeks() == 52);
-// }
+test "test_year_flags_nisoweeks" {
+    try testing.expect(A.nisoweeks() == 52);
+    try testing.expect(B.nisoweeks() == 52);
+    try testing.expect(C.nisoweeks() == 52);
+    try testing.expect(D.nisoweeks() == 53);
+    try testing.expect(E.nisoweeks() == 52);
+    try testing.expect(F.nisoweeks() == 52);
+    try testing.expect(G.nisoweeks() == 52);
+    try testing.expect(AG.nisoweeks() == 52);
+    try testing.expect(BA.nisoweeks() == 52);
+    try testing.expect(CB.nisoweeks() == 52);
+    try testing.expect(DC.nisoweeks() == 53);
+    try testing.expect(ED.nisoweeks() == 53);
+    try testing.expect(FE.nisoweeks() == 52);
+    try testing.expect(GF.nisoweeks() == 52);
+}
 
+fn check1(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) !void {
+    for (month1..month2) |month| {
+        // std.debug.print("check month1= {any}, month2= {any}, day1= {any}, day2={any}\n", .{month1, month2, day1, day2});
+
+        for (day1..day2) |day| {
+            // std.debug.print("check month = {any}, day={any}\n", .{month, day});
+            const mdf = Mdf.new(@intCast(month), @intCast(day), flags);
+            if (mdf == null) {
+                @panic("Mdf::new returned None");
+            }
+
+            try testing.expect(mdf.?.valid() == expected);
+        }
+    }
+}
+
+test "test_mdf_valid" {
+    const check = check1;
+    for (NONLEAP_FLAGS) |flags| {
+        try check(false, flags, 0, 0, 0, 1024);
+        try check(false, flags, 0, 0, 16, 0);
+        try check(true, flags, 1, 1, 1, 31);
+        try check(false, flags, 1, 32, 1, 1024);
+        try check(true, flags, 2, 1, 2, 28);
+        try check(false, flags, 2, 29, 2, 1024);
+        try check(true, flags, 3, 1, 3, 31);
+        try check(false, flags, 3, 32, 3, 1024);
+        try check(true, flags, 4, 1, 4, 30);
+        try check(false, flags, 4, 31, 4, 1024);
+        try check(true, flags, 5, 1, 5, 31);
+        try check(false, flags, 5, 32, 5, 1024);
+        try check(true, flags, 6, 1, 6, 30);
+        try check(false, flags, 6, 31, 6, 1024);
+        try check(true, flags, 7, 1, 7, 31);
+        try check(false, flags, 7, 32, 7, 1024);
+        try check(true, flags, 8, 1, 8, 31);
+        try check(false, flags, 8, 32, 8, 1024);
+        try check(true, flags, 9, 1, 9, 30);
+        try check(false, flags, 9, 31, 9, 1024);
+        try check(true, flags, 10, 1, 10, 31);
+        try check(false, flags, 10, 32, 10, 1024);
+        try check(true, flags, 11, 1, 11, 30);
+        try check(false, flags, 11, 31, 11, 1024);
+        try check(true, flags, 12, 1, 12, 31);
+        try check(false, flags, 12, 32, 12, 1024);
+        // try check(false, flags, 13, 0, 16, 1024);
+        try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
+        try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
+        try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));
+    }
+
+    for (LEAP_FLAGS) |flags| {
+        try check(false, flags, 0, 0, 0, 1024);
+        try check(false, flags, 0, 0, 16, 0);
+        try check(true, flags, 1, 1, 1, 31);
+        try check(false, flags, 1, 32, 1, 1024);
+        try check(true, flags, 2, 1, 2, 29);
+        try check(false, flags, 2, 30, 2, 1024);
+        try check(true, flags, 3, 1, 3, 31);
+        try check(false, flags, 3, 32, 3, 1024);
+        try check(true, flags, 4, 1, 4, 30);
+        try check(false, flags, 4, 31, 4, 1024);
+        try check(true, flags, 5, 1, 5, 31);
+        try check(false, flags, 5, 32, 5, 1024);
+        try check(true, flags, 6, 1, 6, 30);
+        try check(false, flags, 6, 31, 6, 1024);
+        try check(true, flags, 7, 1, 7, 31);
+        try check(false, flags, 7, 32, 7, 1024);
+        try check(true, flags, 8, 1, 8, 31);
+        try check(false, flags, 8, 32, 8, 1024);
+        try check(true, flags, 9, 1, 9, 30);
+        try check(false, flags, 9, 31, 9, 1024);
+        try check(true, flags, 10, 1, 10, 31);
+        try check(false, flags, 10, 32, 10, 1024);
+        try check(true, flags, 11, 1, 11, 30);
+        try check(false, flags, 11, 31, 11, 1024);
+        try check(true, flags, 12, 1, 12, 31);
+        try check(false, flags, 12, 32, 12, 1024);
+        // try check(false, flags, 13, 0, 16, 1024);
+        try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
+        try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
+        try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));
+    }
+}
+
+test "test_mdf_fields" {
+    for (FLAGS) |flags| {
+        for (1..12) |month| {
+            for (1..31) |day| {
+                if (Mdf.new(@intCast(month), @intCast(day), flags)) |mdf| {
+                    if (mdf.valid()) {
+                        try testing.expectEqual(mdf.month(), month);
+                        try testing.expectEqual(mdf.day(), day);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn check2(flags: YearFlags, _month: u32, _day: u32) !void {
+        const _mdf = Mdf.new(_month, _day, flags).?;
+
+        for  (0..16) |month| {
+            if (_mdf.with_month(@intCast(month))) |mdf| {
+                    if (mdf.valid()) {
+                try testing.expectEqual(mdf.month(), month);
+                try testing.expectEqual(mdf.day(), _day);
+            }
+            } else {
+                if (month > 12) {
+                    continue;
+                } else {
+                    @panic("failed to create Mdf with month");
+                }
+            }
+            
+        }
+
+        for  (0..1024) |day| {
+            if (_mdf.with_day(@intCast(day))) |mdf| {
+                    if (mdf.valid()) {
+                try testing.expectEqual(mdf.month(), _month);
+                try testing.expectEqual(mdf.day(), day);
+            }
+            } else {
+                if (day > 31) {
+                    continue;
+                } else {
+                    @panic("failed to create Mdf with month");
+                }
+            }
     
-    // test "test_mdf_valid" {
-    //     fn check(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) {
-    //         for month in month1..=month2 {
-    //             for day in day1..=day2 {
-    //                 let mdf = match Mdf::new(month, day, flags) {
-    //                     Some(mdf) => mdf,
-    //                     None if !expected => continue,
-    //                     None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
-    //                 };
+        }
+    }
 
-    //                 assert!(
-    //                     mdf.valid() == expected,
-    //                     "month {} day {} = {:?} should be {} for dominical year {:?}",
-    //                     month,
-    //                     day,
-    //                     mdf,
-    //                     if expected { "valid" } else { "invalid" },
-    //                     flags
-    //                 );
-    //             }
-    //         }
-    //     }
+test "test_mdf_with_fields" {
+    const check = check2;
 
-    //     for &flags in NONLEAP_FLAGS.iter() {
-    //         check(false, flags, 0, 0, 0, 1024);
-    //         check(false, flags, 0, 0, 16, 0);
-    //         check(true, flags, 1, 1, 1, 31);
-    //         check(false, flags, 1, 32, 1, 1024);
-    //         check(true, flags, 2, 1, 2, 28);
-    //         check(false, flags, 2, 29, 2, 1024);
-    //         check(true, flags, 3, 1, 3, 31);
-    //         check(false, flags, 3, 32, 3, 1024);
-    //         check(true, flags, 4, 1, 4, 30);
-    //         check(false, flags, 4, 31, 4, 1024);
-    //         check(true, flags, 5, 1, 5, 31);
-    //         check(false, flags, 5, 32, 5, 1024);
-    //         check(true, flags, 6, 1, 6, 30);
-    //         check(false, flags, 6, 31, 6, 1024);
-    //         check(true, flags, 7, 1, 7, 31);
-    //         check(false, flags, 7, 32, 7, 1024);
-    //         check(true, flags, 8, 1, 8, 31);
-    //         check(false, flags, 8, 32, 8, 1024);
-    //         check(true, flags, 9, 1, 9, 30);
-    //         check(false, flags, 9, 31, 9, 1024);
-    //         check(true, flags, 10, 1, 10, 31);
-    //         check(false, flags, 10, 32, 10, 1024);
-    //         check(true, flags, 11, 1, 11, 30);
-    //         check(false, flags, 11, 31, 11, 1024);
-    //         check(true, flags, 12, 1, 12, 31);
-    //         check(false, flags, 12, 32, 12, 1024);
-    //         check(false, flags, 13, 0, 16, 1024);
-    //         check(false, flags, u32::MAX, 0, u32::MAX, 1024);
-    //         check(false, flags, 0, u32::MAX, 16, u32::MAX);
-    //         check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-    //     }
+    for (NONLEAP_FLAGS) |flags|  {
+        try check(flags, 1, 1);
+        try check(flags, 1, 31);
+        try check(flags, 2, 1);
+        try check(flags, 2, 28);
+        try check(flags, 2, 29);
+        try check(flags, 12, 31);
+    }
+    for (LEAP_FLAGS) |flags| {
+        try check(flags, 1, 1);
+        try check(flags, 1, 31);
+        try check(flags, 2, 1);
+        try check(flags, 2, 29);
+        try check(flags, 2, 30);
+        try check(flags, 12, 31);
+    }
+}
 
-    //     for &flags in LEAP_FLAGS.iter() {
-    //         check(false, flags, 0, 0, 0, 1024);
-    //         check(false, flags, 0, 0, 16, 0);
-    //         check(true, flags, 1, 1, 1, 31);
-    //         check(false, flags, 1, 32, 1, 1024);
-    //         check(true, flags, 2, 1, 2, 29);
-    //         check(false, flags, 2, 30, 2, 1024);
-    //         check(true, flags, 3, 1, 3, 31);
-    //         check(false, flags, 3, 32, 3, 1024);
-    //         check(true, flags, 4, 1, 4, 30);
-    //         check(false, flags, 4, 31, 4, 1024);
-    //         check(true, flags, 5, 1, 5, 31);
-    //         check(false, flags, 5, 32, 5, 1024);
-    //         check(true, flags, 6, 1, 6, 30);
-    //         check(false, flags, 6, 31, 6, 1024);
-    //         check(true, flags, 7, 1, 7, 31);
-    //         check(false, flags, 7, 32, 7, 1024);
-    //         check(true, flags, 8, 1, 8, 31);
-    //         check(false, flags, 8, 32, 8, 1024);
-    //         check(true, flags, 9, 1, 9, 30);
-    //         check(false, flags, 9, 31, 9, 1024);
-    //         check(true, flags, 10, 1, 10, 31);
-    //         check(false, flags, 10, 32, 10, 1024);
-    //         check(true, flags, 11, 1, 11, 30);
-    //         check(false, flags, 11, 31, 11, 1024);
-    //         check(true, flags, 12, 1, 12, 31);
-    //         check(false, flags, 12, 32, 12, 1024);
-    //         check(false, flags, 13, 0, 16, 1024);
-    //         check(false, flags, u32::MAX, 0, u32::MAX, 1024);
-    //         check(false, flags, 0, u32::MAX, 16, u32::MAX);
-    //         check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-    //     }
-    // }
-
-    // #[test]
-    // fn test_mdf_fields() {
-    //     for &flags in FLAGS.iter() {
-    //         for month in 1u32..=12 {
-    //             for day in 1u32..31 {
-    //                 let mdf = match Mdf::new(month, day, flags) {
-    //                     Some(mdf) => mdf,
-    //                     None => continue,
-    //                 };
-
-    //                 if mdf.valid() {
-    //                     assert_eq!(mdf.month(), month);
-    //                     assert_eq!(mdf.day(), day);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // #[test]
-    // fn test_mdf_with_fields() {
-    //     fn check(flags: YearFlags, month: u32, day: u32) {
-    //         let mdf = Mdf::new(month, day, flags).unwrap();
-
-    //         for month in 0u32..=16 {
-    //             let mdf = match mdf.with_month(month) {
-    //                 Some(mdf) => mdf,
-    //                 None if month > 12 => continue,
-    //                 None => panic!("failed to create Mdf with month {}", month),
-    //             };
-
-    //             if mdf.valid() {
-    //                 assert_eq!(mdf.month(), month);
-    //                 assert_eq!(mdf.day(), day);
-    //             }
-    //         }
-
-    //         for day in 0u32..=1024 {
-    //             let mdf = match mdf.with_day(day) {
-    //                 Some(mdf) => mdf,
-    //                 None if day > 31 => continue,
-    //                 None => panic!("failed to create Mdf with month {}", month),
-    //             };
-
-    //             if mdf.valid() {
-    //                 assert_eq!(mdf.month(), month);
-    //                 assert_eq!(mdf.day(), day);
-    //             }
-    //         }
-    //     }
-
-    //     for &flags in NONLEAP_FLAGS.iter() {
-    //         check(flags, 1, 1);
-    //         check(flags, 1, 31);
-    //         check(flags, 2, 1);
-    //         check(flags, 2, 28);
-    //         check(flags, 2, 29);
-    //         check(flags, 12, 31);
-    //     }
-    //     for &flags in LEAP_FLAGS.iter() {
-    //         check(flags, 1, 1);
-    //         check(flags, 1, 31);
-    //         check(flags, 2, 1);
-    //         check(flags, 2, 29);
-    //         check(flags, 2, 30);
-    //         check(flags, 12, 31);
-    //     }
-    // }
-
-    // #[test]
-    // fn test_mdf_new_range() {
-    //     let flags = YearFlags::from_year(2023);
-    //     assert!(Mdf::new(13, 1, flags).is_none());
-    //     assert!(Mdf::new(1, 32, flags).is_none());
-    // }
-
+test "test_mdf_new_range" {
+    const flags = YearFlags.from_year(2023);
+    try testing.expect(Mdf.new(13, 1, flags) == null);
+    try testing.expect(Mdf.new(1, 32, flags) == null);
+}

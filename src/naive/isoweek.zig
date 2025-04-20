@@ -100,6 +100,14 @@ pub const IsoWeek = struct {
     pub fn week0(self: Self) u32 {
         return @as(u32, (self.ywf >> 4) & 0x3f) - 1;
     }
+
+    ///checks equal or not
+    pub fn as_num(self: Self) i32 {
+        return self.ywf;
+    }
+
+
+
 };
 
 const testing = @import("std").testing;
@@ -114,7 +122,6 @@ test "test_iso_week_extremes" {
     try testing.expectEqual(minweek.year(), date.MIN_YEAR);
     try testing.expectEqual(minweek.week(), 1);
     try testing.expectEqual(minweek.week0(), 0);
-
     try testing.expectEqual(maxweek.year(), date.MAX_YEAR + 1);
     try testing.expectEqual(maxweek.week(), 1);
     try testing.expectEqual(maxweek.week0(), 0);
@@ -138,14 +145,14 @@ test "test_iso_week_ordering_for_first_week" {
     const monday = NaiveDate.from_ymd_opt(2024, 12, 30).?;
     const friday = NaiveDate.from_ymd_opt(2025, 1, 3).?;
 
-    try testing.expect(monday.iso_week() >= friday.iso_week());
-    try testing.expect(monday.iso_week() <= friday.iso_week());
+    try testing.expect(monday.iso_week().as_num() >= friday.iso_week().as_num());
+    try testing.expect(monday.iso_week().as_num() <= friday.iso_week().as_num());
 }
 
 test "test_iso_week_ordering_for_last_week" {
     const monday = NaiveDate.from_ymd_opt(2026, 12, 28).?;
     const friday = NaiveDate.from_ymd_opt(2027, 1, 1).?;
 
-    try testing.expect(monday.iso_week() >= friday.iso_week());
-    try testing.expect(monday.iso_week() <= friday.iso_week());
+    try testing.expect(monday.iso_week().as_num() >= friday.iso_week().as_num());
+    try testing.expect(monday.iso_week().as_num() <= friday.iso_week().as_num());
 }

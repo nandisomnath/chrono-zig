@@ -38,9 +38,12 @@ const internals = @import("internals.zig");
 const weekday = @import("../weekday.zig");
 const month = @import("../month.zig");
 const Days = @import("root.zig").Days;
+const isoweek = @import("isoweek.zig");
+
+
 
 const Months = month.Months;
-
+const IsoWeek = isoweek.IsoWeek;
 const Weekday = weekday.Weekday;
 const YearFlags = internals.YearFlags;
 const Mdf = internals.Mdf;
@@ -111,6 +114,12 @@ pub const NaiveDate = struct {
     // NonZeroI32
     pyof: i32, // (year << 13) | of
     const Self = @This();
+
+
+    /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
+    pub const MIN: NaiveDate = NaiveDate.from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 );
+    /// The maximum possible `NaiveDate` (December 31, 262142 CE).
+    pub const MAX: NaiveDate = NaiveDate.from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16);
 
     pub fn weeks_from(self: Self, day: Weekday) i32 {
         return self.ordinal() - self.weekday().days_since(day) + 6 / 7;
@@ -568,6 +577,10 @@ pub const NaiveDate = struct {
     /// ```
     pub fn leap_year(self: Self) bool {
         return self.yof() & (0b1000) == 0;
+    }
+
+    fn iso_week(self: Self) IsoWeek {
+        return IsoWeek.from_yof(self.year(), self.ordinal(), self.year_flags());
     }
 
 };
@@ -1203,11 +1216,6 @@ pub const NaiveDate = struct {
 
 
 
-//     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
-//     pub const MIN: NaiveDate = NaiveDate::from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 /* D */);
-//     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
-//     pub const MAX: NaiveDate =
-//         NaiveDate::from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16 /* G */);
 
 //     /// One day before the minimum possible `NaiveDate` (December 31, 262145 BCE).
 //     pub(crate) const BEFORE_MIN: NaiveDate =
@@ -1395,10 +1403,7 @@ pub const NaiveDate = struct {
 //         self.weekday()
 //     }
 
-//     #[inline]
-//     fn iso_week(&self) -> IsoWeek {
-//         IsoWeek::from_yof(self.year(), self.ordinal(), self.year_flags())
-//     }
+
 
 //     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
 //     ///

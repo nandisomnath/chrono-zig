@@ -4,6 +4,7 @@ const std = @import("std");
 
 // pub const date = @import("naive/date.zig");
 const internals = @import("internals.zig");
+pub const YearFlags = internals.YearFlags;
 // pub const datetime = @import("datetime/root.zig");
 
 pub const date = @import("date.zig");

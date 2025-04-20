@@ -15,6 +15,7 @@ const std = @import("std");
 pub const YearFlags = struct {
     value: u32,
     const Self = @This();
+
     pub fn new(value: u32) YearFlags {
         return YearFlags{
             .value = value,
@@ -43,7 +44,6 @@ pub const YearFlags = struct {
     }
 
     pub fn isoweek_delta(self: Self) u32 {
-        // let YearFlags(flags) = *self;
         var delta = self.value & 0b0111;
         if (delta < 3) {
             delta += 7;
@@ -121,30 +121,7 @@ fn rem_euclid(this: i32, other: i32) i32 {
     return @mod(this, other);
 }
 
-// impl fmt::Debug for YearFlags {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let YearFlags(flags) = *self;
-//         match flags {
-//             0o15 => "A".fmt(f),
-//             0o05 => "AG".fmt(f),
-//             0o14 => "B".fmt(f),
-//             0o04 => "BA".fmt(f),
-//             0o13 => "C".fmt(f),
-//             0o03 => "CB".fmt(f),
-//             0o12 => "D".fmt(f),
-//             0o02 => "DC".fmt(f),
-//             0o11 => "E".fmt(f),
-//             0o01 => "ED".fmt(f),
-//             0o10 => "F?".fmt(f),
-//             0o00 => "FE?".fmt(f), // non-canonical
-//             0o17 => "F".fmt(f),
-//             0o07 => "FE".fmt(f),
-//             0o16 => "G".fmt(f),
-//             0o06 => "GF".fmt(f),
-//             _ => write!(f, "YearFlags({})", flags),
-//         }
-//     }
-// }
+
 
 // OL: (ordinal << 1) | leap year flag
 const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
@@ -337,7 +314,6 @@ pub const Mdf = struct {
     ///
     /// Returns `None` if `month > 12` or `day > 31`.
     pub fn new(_month: u32, _day: u32, yearFlags: YearFlags) ?Mdf {
-        // std.debug.print("month = {any}, day={any}\n", .{ _month, _day });
         if (_month > 12 or _day > 31) {
             return null;
         }
@@ -439,22 +415,8 @@ pub const Mdf = struct {
     }
 };
 
-// impl fmt::Debug for Mdf {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let Mdf(mdf) = *self;
-//         write!(
-//             f,
-//             "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{:?}*/)",
-//             mdf >> 9,
-//             (mdf >> 4) & 0b1_1111,
-//             mdf & 0b1111,
-//             YearFlags((mdf & 0b1111) as u8)
-//         )
-//     }
-// }
 
-// use super::Mdf;
-// use super::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF, YearFlags};
+
 
 const NONLEAP_FLAGS = [_]YearFlags{ A, B, C, D, E, F, G };
 const LEAP_FLAGS = [_]YearFlags{ AG, BA, CB, DC, ED, FE, GF };
@@ -497,10 +459,7 @@ test "test_year_flags_nisoweeks" {
 
 fn check1(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) !void {
     for (month1..month2) |month| {
-        // std.debug.print("check month1= {any}, month2= {any}, day1= {any}, day2={any}\n", .{month1, month2, day1, day2});
-
         for (day1..day2) |day| {
-            // std.debug.print("check month = {any}, day={any}\n", .{month, day});
             const mdf = Mdf.new(@intCast(month), @intCast(day), flags);
             if (mdf == null) {
                 @panic("Mdf::new returned None");
@@ -540,7 +499,6 @@ test "test_mdf_valid" {
         try check(false, flags, 11, 31, 11, 1024);
         try check(true, flags, 12, 1, 12, 31);
         try check(false, flags, 12, 32, 12, 1024);
-        // try check(false, flags, 13, 0, 16, 1024);
         try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
         try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
         try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));
@@ -573,7 +531,6 @@ test "test_mdf_valid" {
         try check(false, flags, 11, 31, 11, 1024);
         try check(true, flags, 12, 1, 12, 31);
         try check(false, flags, 12, 32, 12, 1024);
-        // try check(false, flags, 13, 0, 16, 1024);
         try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
         try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
         try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));

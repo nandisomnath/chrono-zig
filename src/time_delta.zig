@@ -158,9 +158,9 @@ pub const TimeDelta = struct {
 
     /// Returns the fractional number of seconds in the `TimeDelta`.
     pub fn as_seconds_f64(self: Self) f64 {
-        const _secs = @as(f64, @bitCast(self.secs));
-        const _nanos = @as(f64, @bitCast(@as(i64, @intCast(self.nanos))));
-        const _nano_per_sec = @as(f64, @bitCast(@as(i64, @intCast(NANOS_PER_SEC))));
+        const _secs = std.math.cast(f64, self.secs).?;
+        const _nanos = std.math.cast(f64, self.nanos).?;
+        const _nano_per_sec = std.math.cast(f64, NANOS_PER_SEC).?;
 
         const value = _secs + @divTrunc(_nanos, _nano_per_sec);
 

@@ -13,20 +13,20 @@ const std = @import("std");
 
 // pub struct YearFlags(pub(super) u8);
 pub const YearFlags = struct {
-    value: u32,
+    value: u8,
     const Self = @This();
 
-    pub fn new(value: u32) YearFlags {
+    pub fn new(value: u8) YearFlags {
         return YearFlags{
             .value = value,
         };
     }
 
-    pub fn set(self: *Self, value: u32) void {
+    pub fn set(self: *Self, value: u8) void {
         self.value = value;
     }
 
-    pub fn get(self: Self) u32 {
+    pub fn get(self: Self) u8 {
         return self.value;
     }
 
@@ -40,7 +40,7 @@ pub const YearFlags = struct {
     }
 
     pub fn ndays(self: Self) u32 {
-        return 366 - (self.value >> 3);
+        return std.math.sub(u32, 366, (self.value >> 3)) catch @panic("ndays(): unable to subtract.");
     }
 
     pub fn isoweek_delta(self: Self) u32 {
@@ -53,7 +53,8 @@ pub const YearFlags = struct {
 
     // TODO: find a left shift and right shift alternative
     pub fn nisoweeks(self: Self) u32 {
-        const value = 0b0000_0100_0000_0110 / std.math.pow(u32, 2, self.value); //>> self.value);
+        const v: u32 = 0b0000_0100_0000_0110;
+        const value = v >> std.math.cast(u5, self.value).?; //>> self.value);
         return 52 + (value & 1);
     }
 };

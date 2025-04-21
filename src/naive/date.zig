@@ -576,6 +576,7 @@ pub const NaiveDate = struct {
     /// assert_eq!(NaiveDate::from_ymd_opt(2100, 1, 1).unwrap().leap_year(), false);
     /// ```
     pub fn leap_year(self: Self) bool {
+        
         return self.yof() & (0b1000) == 0;
     }
 

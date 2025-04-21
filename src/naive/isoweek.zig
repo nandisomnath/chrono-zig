@@ -35,18 +35,18 @@ pub const IsoWeek = struct {
             const prevlastweek = YearFlags.from_year(_year - 1).nisoweeks();
             const y = (_year - 1);
             const w = prevlastweek;
-            return IsoWeek{ .ywf = (y << 10) | @as(i32, @intCast(w << 4)) | @as(i32, @intCast(flags.value ))};
+            return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?};
         } else {
             const lastweek = year_flags.nisoweeks();
             if (rawweek > lastweek) {
                 // next year
                 const y = (_year + 1);
                 const w = 1;
-                return IsoWeek{ .ywf = (y << 10) | @as(i32, @intCast(w << 4)) | @as(i32, @intCast(flags.value )) };
+                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).? };
             } else {
                 const y = _year;
                 const w = rawweek;
-                return IsoWeek{ .ywf = (y << 10) | @as(i32, @intCast(w << 4)) | @as(i32, @intCast(flags.value )) };
+                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?};
             }
         }
     }
@@ -104,7 +104,7 @@ pub const IsoWeek = struct {
     /// try testing.expectEqual(d.iso_week().week0(), 14);
     /// ```
     pub fn week0(self: Self) u32 {
-        return ((@as(u32, @intCast(self.ywf)) >> 4) & 0x3f) - 1;
+        return ((std.math.cast(u32, self.ywf).? >> 4) & @as(u32, 0x3f)) - 1;
     }
 
     ///checks equal or not

@@ -31,7 +31,7 @@ pub const YearFlags = struct {
     }
 
     pub fn from_year(_year: i32) YearFlags {
-        const year = rem_euclid(_year, 400); 
+        const year = @mod(_year, 400); 
         return YearFlags.from_year_mod_400(year);
     }
 
@@ -117,11 +117,6 @@ const YEAR_TO_FLAGS = [_]YearFlags{
     A,  G,  FE, D,  C,  B,  AG, F,  E,
     D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
 };
-
-fn rem_euclid(this: i32, other: i32) i32 {
-    return @mod(this, other);
-}
-
 
 
 // OL: (ordinal << 1) | leap year flag
@@ -362,7 +357,8 @@ pub const Mdf = struct {
         if (_day > 31) {
             return null;
         }
-        return Mdf.new_value((self.value & ~@as(u32, 0b1_1111_0000)) | (_day << 4));
+        // ~ @as(u32, 0b1_1111_0000))  = 4294966799
+        return Mdf.new_value((self.value & 4294966799 | (_day << 4)));
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
@@ -380,12 +376,12 @@ pub const Mdf = struct {
     /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
     /// given month.
     pub fn ordinal(self: Self) ?u32 {
-        const mdl = self.value / std.math.pow(u32, 2, 3); //>> 3;
+        const mdl = self.value >> 3; //>> 3;
 
         if (XX == self) {
             return XX;
         }
-        return (mdl - MDL_TO_OL[mdl]) / std.math.pow(u32, 2, 1);
+        return (mdl - MDL_TO_OL[mdl]) >> 1;
     }
 
     /// Returns the year flags of this `Mdf`.

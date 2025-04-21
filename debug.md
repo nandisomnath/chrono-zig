@@ -1,0 +1,1 @@
+zig test src/naive/isoweek.zig -femit-bin=a.out -Doptimize=Debug

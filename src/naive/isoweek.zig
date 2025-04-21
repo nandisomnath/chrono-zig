@@ -146,21 +146,15 @@ test "test_iso_week_equivalence_for_first_week" {
     const monday = NaiveDate.from_ymd_opt(2024, 12, 30).?;
     const friday = NaiveDate.from_ymd_opt(2025, 1, 3).?;
 
-    const mm = monday.iso_week();
-    const mf = monday.iso_week();
-
-    std.debug.print("Monday: year={any}, week={any}, flag= {any}\n", .{ mm.year(), monday.iso_week().week() , monday.iso_week().get_flag().value});
-    std.debug.print("Friday: year={any}, week={any}, flag= {any}\n", .{ mf.year(), friday.iso_week().week() , friday.iso_week().get_flag().value});
-
     try testing.expectEqual(monday.iso_week().as_num(), friday.iso_week().as_num());
 }
 
-// test "test_iso_week_equivalence_for_last_week" {
-//     const monday = NaiveDate.from_ymd_opt(2026, 12, 28).?;
-//     const friday = NaiveDate.from_ymd_opt(2027, 1, 1).?;
+test "test_iso_week_equivalence_for_last_week" {
+    const monday = NaiveDate.from_ymd_opt(2026, 12, 28).?;
+    const friday = NaiveDate.from_ymd_opt(2027, 1, 1).?;
 
-//     try testing.expectEqual(monday.iso_week(), friday.iso_week());
-// }
+    try testing.expectEqual(monday.iso_week(), friday.iso_week());
+}
 
 test "test_iso_week_ordering_for_first_week" {
     const monday = NaiveDate.from_ymd_opt(2024, 12, 30).?;

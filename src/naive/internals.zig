@@ -56,7 +56,8 @@ pub const YearFlags = struct {
         return delta;
     }
 
-    // FIXME: This is the bugged where I cannot find the value for the right shift >>
+    // FIXED: This is the bugged where I cannot find the value for the right shift >>
+    // Do not use shift it will break the program
     pub fn nisoweeks(self: Self) u32 {
         // let YearFlags(flags) = *self;
         const flags = self.value;
@@ -255,7 +256,7 @@ pub const Mdf = struct {
         //     false => None,
         // }
 
-        const v = switch (_month <= 12 and _day <= 32) {
+        const v = switch (_month <= 12 and _day <= 31) {
             true => Mdf.init((_month << 9) | (_day << 4) | std.math.cast(u32, _flags.value).?),
             false => null
         };
@@ -292,7 +293,7 @@ pub const Mdf = struct {
 
         // let Mdf(mdf) = *self;
         const mdf = self.value;
-        return Mdf((mdf & 0b1_1111_1111) | (_month << 9));
+        return Mdf.init((mdf & 0b1_1111_1111) | (_month << 9));
     }
 
     /// Returns the day of this `Mdf`.
@@ -314,14 +315,14 @@ pub const Mdf = struct {
 
         // let Mdf(mdf) = *self;
         const mdf = self.value;
-        return Mdf((mdf & !0b1_1111_0000) | (_day << 4));
+        return Mdf.init((mdf & ~ @as(u32, 0b1_1111_0000)) | (_day << 4));
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
     pub fn with_flags(self: Self, flags: YearFlags) Mdf {
         // let Mdf(mdf) = *self;
         const mdf = self.value;
-        Mdf((mdf & ~0b1111) | std.math.cast(u32, flags.value));
+        return Mdf.init((mdf & ~0b1111) | std.math.cast(u32, flags.value));
     }
 
     /// Returns the ordinal that corresponds to this `Mdf`.
@@ -374,215 +375,200 @@ pub const Mdf = struct {
 };
 
 
+const NONLEAP_FLAGS = [_]YearFlags{ A, B, C, D, E, F, G };
+const LEAP_FLAGS = [_]YearFlags{ AG, BA, CB, DC, ED, FE, GF };
+const FLAGS = [_]YearFlags{ A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF };
 
-// #[cfg(test)]
-// mod tests {
-//     use super::Mdf;
-//     use super::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF, YearFlags};
+const testing = @import("std").testing;
 
-//     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
-//     const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];
-//     const FLAGS: [YearFlags; 14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
 
-//     #[test]
-//     fn test_year_flags_ndays_from_year() {
-//         assert_eq!(YearFlags::from_year(2014).ndays(), 365);
-//         assert_eq!(YearFlags::from_year(2012).ndays(), 366);
-//         assert_eq!(YearFlags::from_year(2000).ndays(), 366);
-//         assert_eq!(YearFlags::from_year(1900).ndays(), 365);
-//         assert_eq!(YearFlags::from_year(1600).ndays(), 366);
-//         assert_eq!(YearFlags::from_year(1).ndays(), 365);
-//         assert_eq!(YearFlags::from_year(0).ndays(), 366); // 1 BCE (proleptic Gregorian)
-//         assert_eq!(YearFlags::from_year(-1).ndays(), 365); // 2 BCE
-//         assert_eq!(YearFlags::from_year(-4).ndays(), 366); // 5 BCE
-//         assert_eq!(YearFlags::from_year(-99).ndays(), 365); // 100 BCE
-//         assert_eq!(YearFlags::from_year(-100).ndays(), 365); // 101 BCE
-//         assert_eq!(YearFlags::from_year(-399).ndays(), 365); // 400 BCE
-//         assert_eq!(YearFlags::from_year(-400).ndays(), 366); // 401 BCE
-//     }
+test "test_year_flags_ndays_from_year" {
+    try testing.expect(YearFlags.from_year(2014).ndays() == 365);
+    try testing.expect(YearFlags.from_year(2012).ndays() == 366);
+    try testing.expect(YearFlags.from_year(2000).ndays() == 366);
+    try testing.expect(YearFlags.from_year(1900).ndays() == 365);
+    try testing.expect(YearFlags.from_year(1600).ndays() == 366);
+    try testing.expect(YearFlags.from_year(1).ndays() == 365);
+    try testing.expect(YearFlags.from_year(0).ndays() == 366); // 1 BCE (proleptic Gregorian)
+    try testing.expect(YearFlags.from_year(-1).ndays() == 365); // 2 BCE
+    try testing.expect(YearFlags.from_year(-4).ndays() == 366); // 5 BCE
+    try testing.expect(YearFlags.from_year(-99).ndays() == 365); // 100 BCE
+    try testing.expect(YearFlags.from_year(-100).ndays() == 365); // 101 BCE
+    try testing.expect(YearFlags.from_year(-399).ndays() == 365); // 400 BCE
+    try testing.expect(YearFlags.from_year(-400).ndays() == 366); // 401 BCE
+}
 
-//     #[test]
-//     fn test_year_flags_nisoweeks() {
-//         assert_eq!(A.nisoweeks(), 52);
-//         assert_eq!(B.nisoweeks(), 52);
-//         assert_eq!(C.nisoweeks(), 52);
-//         assert_eq!(D.nisoweeks(), 53);
-//         assert_eq!(E.nisoweeks(), 52);
-//         assert_eq!(F.nisoweeks(), 52);
-//         assert_eq!(G.nisoweeks(), 52);
-//         assert_eq!(AG.nisoweeks(), 52);
-//         assert_eq!(BA.nisoweeks(), 52);
-//         assert_eq!(CB.nisoweeks(), 52);
-//         assert_eq!(DC.nisoweeks(), 53);
-//         assert_eq!(ED.nisoweeks(), 53);
-//         assert_eq!(FE.nisoweeks(), 52);
-//         assert_eq!(GF.nisoweeks(), 52);
-//     }
+test "test_year_flags_nisoweeks" {
+    try testing.expect(A.nisoweeks() == 52);
+    try testing.expect(B.nisoweeks() == 52);
+    try testing.expect(C.nisoweeks() == 52);
+    try testing.expect(D.nisoweeks() == 53);
+    try testing.expect(E.nisoweeks() == 52);
+    try testing.expect(F.nisoweeks() == 52);
+    try testing.expect(G.nisoweeks() == 52);
+    try testing.expect(AG.nisoweeks() == 52);
+    try testing.expect(BA.nisoweeks() == 52);
+    try testing.expect(CB.nisoweeks() == 52);
+    try testing.expect(DC.nisoweeks() == 53);
+    try testing.expect(ED.nisoweeks() == 53);
+    try testing.expect(FE.nisoweeks() == 52);
+    try testing.expect(GF.nisoweeks() == 52);
+}
 
-//     #[test]
-//     fn test_mdf_valid() {
-//         fn check(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) {
-//             for month in month1..=month2 {
-//                 for day in day1..=day2 {
-//                     let mdf = match Mdf::new(month, day, flags) {
-//                         Some(mdf) => mdf,
-//                         None if !expected => continue,
-//                         None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
-//                     };
+fn check1(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) !void {
+    for (month1..month2) |month| {
+        for (day1..day2) |day| {
+            const mdf = Mdf.new(@intCast(month), @intCast(day), flags);
+            if (mdf == null) {
+                @panic("Mdf::new returned None");
+            }
 
-//                     assert!(
-//                         mdf.valid() == expected,
-//                         "month {} day {} = {:?} should be {} for dominical year {:?}",
-//                         month,
-//                         day,
-//                         mdf,
-//                         if expected { "valid" } else { "invalid" },
-//                         flags
-//                     );
-//                 }
-//             }
-//         }
+            try testing.expect(mdf.?.valid() == expected);
+        }
+    }
+}
 
-//         for &flags in NONLEAP_FLAGS.iter() {
-//             check(false, flags, 0, 0, 0, 1024);
-//             check(false, flags, 0, 0, 16, 0);
-//             check(true, flags, 1, 1, 1, 31);
-//             check(false, flags, 1, 32, 1, 1024);
-//             check(true, flags, 2, 1, 2, 28);
-//             check(false, flags, 2, 29, 2, 1024);
-//             check(true, flags, 3, 1, 3, 31);
-//             check(false, flags, 3, 32, 3, 1024);
-//             check(true, flags, 4, 1, 4, 30);
-//             check(false, flags, 4, 31, 4, 1024);
-//             check(true, flags, 5, 1, 5, 31);
-//             check(false, flags, 5, 32, 5, 1024);
-//             check(true, flags, 6, 1, 6, 30);
-//             check(false, flags, 6, 31, 6, 1024);
-//             check(true, flags, 7, 1, 7, 31);
-//             check(false, flags, 7, 32, 7, 1024);
-//             check(true, flags, 8, 1, 8, 31);
-//             check(false, flags, 8, 32, 8, 1024);
-//             check(true, flags, 9, 1, 9, 30);
-//             check(false, flags, 9, 31, 9, 1024);
-//             check(true, flags, 10, 1, 10, 31);
-//             check(false, flags, 10, 32, 10, 1024);
-//             check(true, flags, 11, 1, 11, 30);
-//             check(false, flags, 11, 31, 11, 1024);
-//             check(true, flags, 12, 1, 12, 31);
-//             check(false, flags, 12, 32, 12, 1024);
-//             check(false, flags, 13, 0, 16, 1024);
-//             check(false, flags, u32::MAX, 0, u32::MAX, 1024);
-//             check(false, flags, 0, u32::MAX, 16, u32::MAX);
-//             check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-//         }
+test "test_mdf_valid" {
+    const check = check1;
+    for (NONLEAP_FLAGS) |flags| {
+        try check(false, flags, 0, 0, 0, 1024);
+        try check(false, flags, 0, 0, 16, 0);
+        try check(true, flags, 1, 1, 1, 31);
+        try check(false, flags, 1, 32, 1, 1024);
+        try check(true, flags, 2, 1, 2, 28);
+        try check(false, flags, 2, 29, 2, 1024);
+        try check(true, flags, 3, 1, 3, 31);
+        try check(false, flags, 3, 32, 3, 1024);
+        try check(true, flags, 4, 1, 4, 30);
+        try check(false, flags, 4, 31, 4, 1024);
+        try check(true, flags, 5, 1, 5, 31);
+        try check(false, flags, 5, 32, 5, 1024);
+        try check(true, flags, 6, 1, 6, 30);
+        try check(false, flags, 6, 31, 6, 1024);
+        try check(true, flags, 7, 1, 7, 31);
+        try check(false, flags, 7, 32, 7, 1024);
+        try check(true, flags, 8, 1, 8, 31);
+        try check(false, flags, 8, 32, 8, 1024);
+        try check(true, flags, 9, 1, 9, 30);
+        try check(false, flags, 9, 31, 9, 1024);
+        try check(true, flags, 10, 1, 10, 31);
+        try check(false, flags, 10, 32, 10, 1024);
+        try check(true, flags, 11, 1, 11, 30);
+        try check(false, flags, 11, 31, 11, 1024);
+        try check(true, flags, 12, 1, 12, 31);
+        try check(false, flags, 12, 32, 12, 1024);
+        try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
+        try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
+        try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));
+    }
 
-//         for &flags in LEAP_FLAGS.iter() {
-//             check(false, flags, 0, 0, 0, 1024);
-//             check(false, flags, 0, 0, 16, 0);
-//             check(true, flags, 1, 1, 1, 31);
-//             check(false, flags, 1, 32, 1, 1024);
-//             check(true, flags, 2, 1, 2, 29);
-//             check(false, flags, 2, 30, 2, 1024);
-//             check(true, flags, 3, 1, 3, 31);
-//             check(false, flags, 3, 32, 3, 1024);
-//             check(true, flags, 4, 1, 4, 30);
-//             check(false, flags, 4, 31, 4, 1024);
-//             check(true, flags, 5, 1, 5, 31);
-//             check(false, flags, 5, 32, 5, 1024);
-//             check(true, flags, 6, 1, 6, 30);
-//             check(false, flags, 6, 31, 6, 1024);
-//             check(true, flags, 7, 1, 7, 31);
-//             check(false, flags, 7, 32, 7, 1024);
-//             check(true, flags, 8, 1, 8, 31);
-//             check(false, flags, 8, 32, 8, 1024);
-//             check(true, flags, 9, 1, 9, 30);
-//             check(false, flags, 9, 31, 9, 1024);
-//             check(true, flags, 10, 1, 10, 31);
-//             check(false, flags, 10, 32, 10, 1024);
-//             check(true, flags, 11, 1, 11, 30);
-//             check(false, flags, 11, 31, 11, 1024);
-//             check(true, flags, 12, 1, 12, 31);
-//             check(false, flags, 12, 32, 12, 1024);
-//             check(false, flags, 13, 0, 16, 1024);
-//             check(false, flags, u32::MAX, 0, u32::MAX, 1024);
-//             check(false, flags, 0, u32::MAX, 16, u32::MAX);
-//             check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-//         }
-//     }
+    for (LEAP_FLAGS) |flags| {
+        try check(false, flags, 0, 0, 0, 1024);
+        try check(false, flags, 0, 0, 16, 0);
+        try check(true, flags, 1, 1, 1, 31);
+        try check(false, flags, 1, 32, 1, 1024);
+        try check(true, flags, 2, 1, 2, 29);
+        try check(false, flags, 2, 30, 2, 1024);
+        try check(true, flags, 3, 1, 3, 31);
+        try check(false, flags, 3, 32, 3, 1024);
+        try check(true, flags, 4, 1, 4, 30);
+        try check(false, flags, 4, 31, 4, 1024);
+        try check(true, flags, 5, 1, 5, 31);
+        try check(false, flags, 5, 32, 5, 1024);
+        try check(true, flags, 6, 1, 6, 30);
+        try check(false, flags, 6, 31, 6, 1024);
+        try check(true, flags, 7, 1, 7, 31);
+        try check(false, flags, 7, 32, 7, 1024);
+        try check(true, flags, 8, 1, 8, 31);
+        try check(false, flags, 8, 32, 8, 1024);
+        try check(true, flags, 9, 1, 9, 30);
+        try check(false, flags, 9, 31, 9, 1024);
+        try check(true, flags, 10, 1, 10, 31);
+        try check(false, flags, 10, 32, 10, 1024);
+        try check(true, flags, 11, 1, 11, 30);
+        try check(false, flags, 11, 31, 11, 1024);
+        try check(true, flags, 12, 1, 12, 31);
+        try check(false, flags, 12, 32, 12, 1024);
+        try check(false, flags, std.math.maxInt(u32), 0, std.math.maxInt(u32), 1024);
+        try check(false, flags, 0, std.math.maxInt(u32), 16, std.math.maxInt(u32));
+        try check(false, flags, std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32), std.math.maxInt(u32));
+    }
+}
 
-//     #[test]
-//     fn test_mdf_fields() {
-//         for &flags in FLAGS.iter() {
-//             for month in 1u32..=12 {
-//                 for day in 1u32..31 {
-//                     let mdf = match Mdf::new(month, day, flags) {
-//                         Some(mdf) => mdf,
-//                         None => continue,
-//                     };
+test "test_mdf_fields" {
+    for (FLAGS) |flags| {
+        for (1..12) |month| {
+            for (1..31) |day| {
+                if (Mdf.new(@intCast(month), @intCast(day), flags)) |mdf| {
+                    if (mdf.valid()) {
+                        try testing.expectEqual(mdf.month(), month);
+                        try testing.expectEqual(mdf.day(), day);
+                    }
+                }
+            }
+        }
+    }
+}
 
-//                     if mdf.valid() {
-//                         assert_eq!(mdf.month(), month);
-//                         assert_eq!(mdf.day(), day);
-//                     }
-//                 }
-//             }
-//         }
-//     }
+fn check2(flags: YearFlags, _month: u32, _day: u32) !void {
+        const _mdf = Mdf.new(_month, _day, flags).?;
 
-//     #[test]
-//     fn test_mdf_with_fields() {
-//         fn check(flags: YearFlags, month: u32, day: u32) {
-//             let mdf = Mdf::new(month, day, flags).unwrap();
+        for  (0..16) |month| {
+            if (_mdf.with_month(@intCast(month))) |mdf| {
+                    if (mdf.valid()) {
+                try testing.expectEqual(mdf.month(), month);
+                try testing.expectEqual(mdf.day(), _day);
+            }
+            } else {
+                if (month > 12) {
+                    continue;
+                } else {
+                    @panic("failed to create Mdf with month");
+                }
+            }
+            
+        }
 
-//             for month in 0u32..=16 {
-//                 let mdf = match mdf.with_month(month) {
-//                     Some(mdf) => mdf,
-//                     None if month > 12 => continue,
-//                     None => panic!("failed to create Mdf with month {}", month),
-//                 };
+        for  (0..1024) |day| {
+            if (_mdf.with_day(@intCast(day))) |mdf| {
+                    if (mdf.valid()) {
+                try testing.expectEqual(mdf.month(), _month);
+                try testing.expectEqual(mdf.day(), day);
+            }
+            } else {
+                if (day > 31) {
+                    continue;
+                } else {
+                    @panic("failed to create Mdf with month");
+                }
+            }
+    
+        }
+    }
 
-//                 if mdf.valid() {
-//                     assert_eq!(mdf.month(), month);
-//                     assert_eq!(mdf.day(), day);
-//                 }
-//             }
+test "test_mdf_with_fields" {
+    const check = check2;
 
-//             for day in 0u32..=1024 {
-//                 let mdf = match mdf.with_day(day) {
-//                     Some(mdf) => mdf,
-//                     None if day > 31 => continue,
-//                     None => panic!("failed to create Mdf with month {}", month),
-//                 };
+    for (NONLEAP_FLAGS) |flags|  {
+        try check(flags, 1, 1);
+        try check(flags, 1, 31);
+        try check(flags, 2, 1);
+        try check(flags, 2, 28);
+        try check(flags, 2, 29);
+        try check(flags, 12, 31);
+    }
+    for (LEAP_FLAGS) |flags| {
+        try check(flags, 1, 1);
+        try check(flags, 1, 31);
+        try check(flags, 2, 1);
+        try check(flags, 2, 29);
+        try check(flags, 2, 30);
+        try check(flags, 12, 31);
+    }
+}
 
-//                 if mdf.valid() {
-//                     assert_eq!(mdf.month(), month);
-//                     assert_eq!(mdf.day(), day);
-//                 }
-//             }
-//         }
-
-//         for &flags in NONLEAP_FLAGS.iter() {
-//             check(flags, 1, 1);
-//             check(flags, 1, 31);
-//             check(flags, 2, 1);
-//             check(flags, 2, 28);
-//             check(flags, 2, 29);
-//             check(flags, 12, 31);
-//         }
-//         for &flags in LEAP_FLAGS.iter() {
-//             check(flags, 1, 1);
-//             check(flags, 1, 31);
-//             check(flags, 2, 1);
-//             check(flags, 2, 29);
-//             check(flags, 2, 30);
-//             check(flags, 12, 31);
-//         }
-//     }
-
-//     #[test]
-//     fn test_mdf_new_range() {
-//         let flags = YearFlags::from_year(2023);
-//         assert!(Mdf::new(13, 1, flags).is_none());
-//         assert!(Mdf::new(1, 32, flags).is_none());
-//     }
-// }
+test "test_mdf_new_range" {
+    const flags = YearFlags.from_year(2023);
+    try testing.expect(Mdf.new(13, 1, flags) == null);
+    try testing.expect(Mdf.new(1, 32, flags) == null);
+}

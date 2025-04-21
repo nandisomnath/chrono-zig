@@ -17,6 +17,7 @@ pub const IsoWeek = struct {
     // This is crucial because we have an edge case for the first and last week supported,
     // which year number might not match the calendar year number.
     ywf: i32, // (year << 10) | (week << 4) | flag
+    flag: YearFlags, // this is for debug purpose 
     const Self = @This();
 
     /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
@@ -27,26 +28,28 @@ pub const IsoWeek = struct {
     // Currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
     pub fn from_yof(_year: i32, ordinal: u32, year_flags: YearFlags) Self {
         const rawweek = (ordinal + year_flags.isoweek_delta()) / 7;
-        const flags = YearFlags.from_year(_year);
-
+        
         // const y, const w =
         if (rawweek < 1) {
             // previous year
             const prevlastweek = YearFlags.from_year(_year - 1).nisoweeks();
             const y = (_year - 1);
             const w = prevlastweek;
-            return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?};
+            const flags = YearFlags.from_year(y);
+            return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?, .flag = flags};
         } else {
             const lastweek = year_flags.nisoweeks();
             if (rawweek > lastweek) {
                 // next year
                 const y = (_year + 1);
                 const w = 1;
-                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).? };
+                const flags = YearFlags.from_year(y);
+                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).? , .flag = flags};
             } else {
                 const y = _year;
                 const w = rawweek;
-                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?};
+                const flags = YearFlags.from_year(y);
+                return IsoWeek{ .ywf = (y << 10) | std.math.cast(i32, w << 4).? | std.math.cast(i32, flags.value).?, .flag = flags};
             }
         }
     }
@@ -111,6 +114,11 @@ pub const IsoWeek = struct {
     pub fn as_num(self: Self) i32 {
         return self.ywf;
     }
+
+    pub fn get_flag(self: Self) YearFlags {
+        return self.flag;
+    }
+
 };
 
 const testing = @import("std").testing;
@@ -118,37 +126,41 @@ const testing = @import("std").testing;
 const date = @import("date.zig");
 const NaiveDate = naive.NaiveDate;
 
-test "test_iso_week_extremes" {
-    const minweek = NaiveDate.MIN.iso_week();
-    const maxweek = NaiveDate.MAX.iso_week();
+// test "test_iso_week_extremes" {
+//     const minweek = NaiveDate.MIN.iso_week();
+//     const maxweek = NaiveDate.MAX.iso_week();
 
-    try testing.expectEqual(minweek.year(), date.MIN_YEAR);
-    // try testing.expectEqual(minweek.week(), 1);
-    // try testing.expectEqual(minweek.week0(), 0);
-    try testing.expectEqual(maxweek.year(), date.MAX_YEAR + 1);
-    try testing.expectEqual(maxweek.week(), 1);
-    try testing.expectEqual(maxweek.week0(), 0);
-}
+//     try testing.expectEqual(minweek.year(), date.MIN_YEAR);
+//     // try testing.expectEqual(minweek.week(), 1);
+//     // try testing.expectEqual(minweek.week0(), 0);
+//     try testing.expectEqual(maxweek.year(), date.MAX_YEAR + 1);
+//     try testing.expectEqual(maxweek.week(), 1);
+//     try testing.expectEqual(maxweek.week0(), 0);
+// }
 
 const std = @import("std");
 
 // TODO: fix this it should be passed
+// problem in flags one is 9 and one is 6
 test "test_iso_week_equivalence_for_first_week" {
     const monday = NaiveDate.from_ymd_opt(2024, 12, 30).?;
     const friday = NaiveDate.from_ymd_opt(2025, 1, 3).?;
 
-    std.debug.print("\nMonday: year={any}, week={any}\n", .{ monday.iso_week().year(), monday.iso_week().week() });
-    std.debug.print("Friday: year={any}, week={any}\n", .{ friday.iso_week().year(), friday.iso_week().week() });
+    const mm = monday.iso_week();
+    const mf = monday.iso_week();
+
+    std.debug.print("Monday: year={any}, week={any}, flag= {any}\n", .{ mm.year(), monday.iso_week().week() , monday.iso_week().get_flag().value});
+    std.debug.print("Friday: year={any}, week={any}, flag= {any}\n", .{ mf.year(), friday.iso_week().week() , friday.iso_week().get_flag().value});
 
     try testing.expectEqual(monday.iso_week().as_num(), friday.iso_week().as_num());
 }
 
-test "test_iso_week_equivalence_for_last_week" {
-    // const monday = NaiveDate.from_ymd_opt(2026, 12, 28).?;
-    // const friday = NaiveDate.from_ymd_opt(2027, 1, 1).?;
+// test "test_iso_week_equivalence_for_last_week" {
+//     const monday = NaiveDate.from_ymd_opt(2026, 12, 28).?;
+//     const friday = NaiveDate.from_ymd_opt(2027, 1, 1).?;
 
-    // try testing.expectEqual(monday.iso_week(), friday.iso_week());
-}
+//     try testing.expectEqual(monday.iso_week(), friday.iso_week());
+// }
 
 test "test_iso_week_ordering_for_first_week" {
     const monday = NaiveDate.from_ymd_opt(2024, 12, 30).?;

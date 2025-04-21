@@ -177,7 +177,7 @@ pub const NaiveDate = struct {
         if (_year < MIN_YEAR or _year > MAX_YEAR) {
             return null; // Out-of-range
         }
-        return NaiveDate.from_yof((_year << 13) | @as(i32, @intCast(_mdf.ordinal_and_flags())));
+        return NaiveDate.from_yof((_year << 13) | std.math.cast(i32, _mdf.ordinal_and_flags().?).?);
     }
 
   
@@ -208,7 +208,7 @@ pub const NaiveDate = struct {
     /// ```
     pub fn from_ymd_opt(_year: i32, _month: u32, _day: u32) ?NaiveDate {
         const flags = YearFlags.from_year(_year);
-
+        // std.debug.print("{s} from_ymd_opt() flag: {any}\n", .{name, flags.value});
         if (Mdf.new(_month, _day, flags)) |_mdf| {
             return NaiveDate.from_mdf(_year, _mdf);
         } else {
@@ -594,7 +594,7 @@ pub const NaiveDate = struct {
     /// Returns the day of year starting from 1.
     // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
     fn ordinal(self: Self) u32 {
-        return (@as(u32, @intCast(self.yof() & ORDINAL_MASK)) >> 4);
+        return (std.math.cast(u32, (self.yof() & ORDINAL_MASK)).? >> 4); //as u32
     }
 
     // This duplicates `Datelike::month()`, because trait methods can't be const yet.

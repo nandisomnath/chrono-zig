@@ -57,12 +57,16 @@ pub const YearFlags = struct {
     }
 
     // FIXED: This is the bugged where I cannot find the value for the right shift >>
-    // Do not use shift it will break the program
+    // Do not use shift it will break the program.
+    // Use shift with precusion
     pub fn nisoweeks(self: Self) u32 {
         // let YearFlags(flags) = *self;
         const flags = self.value;
         // flags -> usize needed
-        const s = 0b0000_0100_0000_0110 / std.math.pow(usize, 2, flags);
+        // But usize will not be supported by our zig
+        // Just type cast all in same type then it will give the right answer
+        // const s = 0b0000_0100_0000_0110 / std.math.pow(usize, 2, flags);
+        const s: u32 = @as(u32, 0b0000010000000110) >> @intCast(flags);
         return @intCast(52 + (s & 1));
         // return 52 + ((@as(u32, 0b0000_0100_0000_0110) >> (std.math.cast(u5, flags).? & 1)));
     }

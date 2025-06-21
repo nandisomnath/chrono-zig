@@ -1,22 +1,7 @@
-[Chrono][docsrs]: Timezone-aware date and time handling
+Chrono: Timezone-aware date and time handling
 ========================================
 
-[![Chrono GitHub Actions][gh-image]][gh-checks]
-[![Chrono on crates.io][cratesio-image]][cratesio]
-[![Chrono on docs.rs][docsrs-image]][docsrs]
-[![Chat][discord-image]][discord]
-[![codecov.io][codecov-img]][codecov-link]
 
-[gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg?branch=main
-[gh-checks]: https://github.com/chronotope/chrono/actions/workflows/test.yml?query=branch%3Amain
-[cratesio-image]: https://img.shields.io/crates/v/chrono.svg
-[cratesio]: https://crates.io/crates/chrono
-[docsrs-image]: https://docs.rs/chrono/badge.svg
-[docsrs]: https://docs.rs/chrono
-[discord-image]: https://img.shields.io/discord/976380008299917365?logo=discord
-[discord]: https://discord.gg/sXpav4PS7M
-[codecov-img]: https://img.shields.io/codecov/c/github/chronotope/chrono?logo=codecov
-[codecov-link]: https://codecov.io/gh/chronotope/chrono
 
 Chrono aims to provide all functionality needed to do correct operations on dates and times in the
 [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
@@ -36,7 +21,9 @@ full timezone support.
 
 ## Documentation
 
-See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
+Not available for now
+
+<!-- See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference. -->
 
 ## Limitations
 
@@ -44,43 +31,15 @@ See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
 * Date types are limited to about +/- 262,000 years from the common epoch.
 * Time types are limited to nanosecond accuracy.
 * Leap seconds can be represented, but Chrono does not fully support them.
-  See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
 
-## Crate features
+## Module features
 
-Default features:
 
-* `alloc`: Enable features that depend on allocation (primarily string formatting).
-* `std`: Enables functionality that depends on the standard library. This is a superset of `alloc`
-  and adds interoperation with standard library types and traits.
-* `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
-* `now`: Enables reading the system time (`now`).
-* `wasmbind`: Interface with the JS Date API for the `wasm32` target.
-
-Optional features:
-
-* `serde`: Enable serialization/deserialization via [serde].
-* `rkyv`: Deprecated, use the `rkyv-*` features.
-* `rkyv-16`: Enable serialization/deserialization via [rkyv], using 16-bit integers for integral `*size` types.
-* `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
-* `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
-* `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
-* `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
-* `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
-  The implementation and API may change or even be removed in a patch release. Feedback welcome.
-* `oldtime`: This feature no longer has any effect; it used to offer compatibility with the `time` 0.1 crate.
-
-Note: The `rkyv{,-16,-32,-64}` features are mutually exclusive.
-
-[serde]: https://github.com/serde-rs/serde
-[rkyv]: https://github.com/rkyv/rkyv
 
 ## Rust version requirements
 
-The Minimum Supported Rust Version (MSRV) is currently **Rust 1.61.0**.
+The Minimum Supported Zig Version is currently **Rust 0.14.0**.
 
-The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
-lightly.
 
 ## License
 

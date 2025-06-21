@@ -282,44 +282,47 @@ pub const WeekdaySet = struct {
     //     WeekdaySetIter { days: self, start }
     // }
 
-    // /// Returns `true` if the collection contains the given day.
-    // ///
-    // /// # Example
-    // /// ```
-    // /// # use chrono::WeekdaySet;
-    // /// use chrono::Weekday::*;
-    // /// assert!(WeekdaySet::single(Mon).contains(Mon));
-    // /// assert!(WeekdaySet::from_array([Mon, Tue]).contains(Tue));
-    // /// assert!(!WeekdaySet::single(Mon).contains(Tue));
-    // /// ```
-    // pub const fn contains(self, day: Weekday) -> bool {
-    //     self.0 & Self::single(day).0 != 0
-    // }
+    /// Returns `true` if the collection contains the given day.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert!(WeekdaySet::single(Mon).contains(Mon));
+    /// assert!(WeekdaySet::from_array([Mon, Tue]).contains(Tue));
+    /// assert!(!WeekdaySet::single(Mon).contains(Tue));
+    /// ```
+    pub  fn contains(self: *Self, day: Weekday) bool {
+        return self.value & Self.single(day).value != 0;
+    }
 
-    // /// Returns `true` if the collection is empty.
-    // ///
-    // /// # Example
-    // /// ```
-    // /// # use chrono::{Weekday, WeekdaySet};
-    // /// assert!(WeekdaySet::EMPTY.is_empty());
-    // /// assert!(!WeekdaySet::single(Weekday::Mon).is_empty());
-    // /// ```
-    // pub const fn is_empty(self) -> bool {
-    //     self.len() == 0
-    // }
-    // /// Returns the number of days in the collection.
-    // ///
-    // /// # Example
-    // /// ```
-    // /// # use chrono::WeekdaySet;
-    // /// use chrono::Weekday::*;
-    // /// assert_eq!(WeekdaySet::single(Mon).len(), 1);
-    // /// assert_eq!(WeekdaySet::from_array([Mon, Wed, Fri]).len(), 3);
-    // /// assert_eq!(WeekdaySet::ALL.len(), 7);
-    // /// ```
-    // pub const fn len(self) -> u8 {
-    //     self.0.count_ones() as u8
-    // }
+    /// Returns `true` if the collection is empty.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::{Weekday, WeekdaySet};
+    /// assert!(WeekdaySet::EMPTY.is_empty());
+    /// assert!(!WeekdaySet::single(Weekday::Mon).is_empty());
+    /// ```
+    pub fn is_empty(self: *Self) bool {
+        return self.len() == 0;
+    }
+
+
+    /// Returns the number of days in the collection.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).len(), 1);
+    /// assert_eq!(WeekdaySet::from_array([Mon, Wed, Fri]).len(), 3);
+    /// assert_eq!(WeekdaySet::ALL.len(), 7);
+    /// ```
+    pub fn len(self: *Self) u8 {
+        return @popCount(self.value);
+        // return self.value.count_ones() as u8
+    }
 
     /// An empty `WeekdaySet`.
     pub const EMPTY: Self = Self(0b000_0000);

@@ -60,8 +60,8 @@ pub const Weekday = weekday.Weekday;
 
 
 // // mod weekday_set;
-// const weekday_set = @import("weekday_set.zig");
-// pub const WeekdaySet = weekday_set.WeekdaySet;
+const weekday_set = @import("weekday_set.zig");
+pub const WeekdaySet = weekday_set.WeekdaySet;
 
 
 // // mod month;
@@ -122,4 +122,5 @@ test {
     _ = naive;
     _ = weekday;
     _ = month;
+    _ = weekday_set;
 }

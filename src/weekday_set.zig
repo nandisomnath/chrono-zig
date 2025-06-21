@@ -292,7 +292,7 @@ pub const WeekdaySet = struct {
     /// assert!(WeekdaySet::from_array([Mon, Tue]).contains(Tue));
     /// assert!(!WeekdaySet::single(Mon).contains(Tue));
     /// ```
-    pub  fn contains(self: *Self, day: Weekday) bool {
+    pub fn contains(self: *Self, day: Weekday) bool {
         return self.value & Self.single(day).value != 0;
     }
 
@@ -308,7 +308,6 @@ pub const WeekdaySet = struct {
         return self.len() == 0;
     }
 
-
     /// Returns the number of days in the collection.
     ///
     /// # Example
@@ -322,6 +321,17 @@ pub const WeekdaySet = struct {
     pub fn len(self: *Self) u8 {
         return @popCount(self.value);
         // return self.value.count_ones() as u8
+    }
+
+    /// Iterate over all 128 possible sets, from `EMPTY` to `ALL`.
+    /// Returns a range tuple like .field0 = start and .field1 = end
+    fn iter_all() struct { u8, u8 } {
+        const start: u8 = 0b0000_0000;
+        const end: u8 = 0b1000_0000;
+
+        return .{ start, end };
+
+        // (..).map(Self)
     }
 
     /// An empty `WeekdaySet`.
@@ -434,65 +444,43 @@ pub const WeekdaySet = struct {
 // #[cfg(test)]
 // mod tests {
 //     use crate::Weekday;
+const std = @import("std");
+const testing = std.testing;
 
 //     use super::WeekdaySet;
 
 //     impl WeekdaySet {
-//         /// Iterate over all 128 possible sets, from `EMPTY` to `ALL`.
-//         fn iter_all() -> impl Iterator<Item = Self> {
-//             (0b0000_0000..0b1000_0000).map(Self)
-//         }
+//
+
 //     }
 
 //     /// Panics if the 8-th bit of `self` is not 0.
-//     fn assert_8th_bit_invariant(days: WeekdaySet) {
-//         assert!(days.0 & 0b1000_0000 == 0, "the 8-th bit of {days:?} is not 0");
-//     }
+fn assert_8th_bit_invariant(days: WeekdaySet) void {
+    std.debug.assert(days.value & 0b1000_0000 == 0);
+    // assert!(, "the 8-th bit of {days:?} is not 0");
+}
 
-//     #[test]
-//     fn debug_prints_8th_bit_if_not_zero() {
-//         assert_eq!(format!("{:?}", WeekdaySet(0b1000_0000)), "WeekdaySet(10000000)");
-//     }
-
-//     #[test]
-//     fn bitwise_set_operations_preserve_8th_bit_invariant() {
-//         for set1 in WeekdaySet::iter_all() {
-//             for set2 in WeekdaySet::iter_all() {
-//                 assert_8th_bit_invariant(set1.union(set2));
-//                 assert_8th_bit_invariant(set1.intersection(set2));
-//                 assert_8th_bit_invariant(set1.symmetric_difference(set2));
-//             }
-//         }
-//     }
-
-//     /// Test `split_at` on all possible arguments.
-//     #[test]
-//     fn split_at_is_equivalent_to_iterating() {
-//         use Weekday::*;
-
-//         // `split_at()` is used in `iter()`, so we must not iterate
-//         // over all days with `WeekdaySet::ALL.iter(Mon)`.
-//         const WEEK: [Weekday; 7] = [Mon, Tue, Wed, Thu, Fri, Sat, Sun];
-
-//         for weekdays in WeekdaySet::iter_all() {
-//             for split_day in WEEK {
-//                 let expected_before: WeekdaySet = WEEK
-//                     .into_iter()
-//                     .take_while(|&day| day != split_day)
-//                     .filter(|&day| weekdays.contains(day))
-//                     .collect();
-//                 let expected_after: WeekdaySet = WEEK
-//                     .into_iter()
-//                     .skip_while(|&day| day != split_day)
-//                     .filter(|&day| weekdays.contains(day))
-//                     .collect();
-
-//                 assert_eq!(
-//                     (expected_before, expected_after),
-//                     weekdays.split_at(split_day),
-//                     "split_at({split_day}) failed for {weekdays}",
-//                 );
-//             }
-//         }
-//     }
+// not implemented yet
+// test "debug_prints_8th_bit_if_not_zero" {
+//     const buffer = try std.fmt.allocPrint(std.heap.page_allocator, "{any}", WeekdaySet(0b1000_0000));
+//     try testing.expect(std.mem.eql(u8, buffer, "WeekdaySet(10000000)"));
 // }
+
+//     #[test]
+test "bitwise_set_operations_preserve_8th_bit_invariant" {
+    const start, const end = WeekdaySet.iter_all();
+    for (start..end) |v1| {
+        var set1 = WeekdaySet.init(@intCast(v1));
+        for (start..end) |v2| {
+            const set2 = WeekdaySet.init(@intCast(v2));
+            assert_8th_bit_invariant(set1.union_weekdayset(set2));
+            assert_8th_bit_invariant(set1.intersection(set2));
+            assert_8th_bit_invariant(set1.symmetric_difference(set2));
+        }
+    }
+    // for set1 in WeekdaySet::iter_all() {
+    //     for set2 in WeekdaySet::iter_all() {
+
+    //     }
+    // }
+}

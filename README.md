@@ -45,3 +45,10 @@ This project is licensed under
 * [MIT License](https://opensource.org/licenses/MIT)
 
 
+## Disclaimer
+
+This project is a port of the rust version of
+[`Chrono`](https://github.com/chronotope/chrono).  
+If the rust version have any bug that can have in this project.
+
+

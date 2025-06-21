@@ -43,9 +43,7 @@ The Minimum Supported Zig Version is currently **Rust 0.14.0**.
 
 ## License
 
-This project is licensed under either of
-
-* [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+This project is licensed under 
 * [MIT License](https://opensource.org/licenses/MIT)
 
-at your option.
+

@@ -4,316 +4,328 @@
 // };
 
 // use crate::Weekday;
+const root = @import("root");
+const Weekday = root.Weekday;
 
-// /// A collection of [`Weekday`]s stored as a single byte.
-// ///
-// /// This type is `Copy` and provides efficient set-like and slice-like operations.
-// /// Many operations are `const` as well.
-// ///
-// /// Implemented as a bitmask where bits 1-7 correspond to Monday-Sunday.
-// #[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-// pub struct WeekdaySet(u8); // Invariant: the 8-th bit is always 0.
+/// A collection of [`Weekday`]s stored as a single byte.
+///
+/// This type is `Copy` and provides efficient set-like and slice-like operations.
+/// Many operations are `const` as well.
+///
+/// Implemented as a bitmask where bits 1-7 correspond to Monday-Sunday.
+pub const WeekdaySet = struct {
+    value: u8, // Invariant: the 8-th bit is always 0.
+    const Self = @This();
 
-// impl WeekdaySet {
-//     /// Create a `WeekdaySet` from an array of [`Weekday`]s.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::EMPTY, WeekdaySet::from_array([]));
-//     /// assert_eq!(WeekdaySet::single(Mon), WeekdaySet::from_array([Mon]));
-//     /// assert_eq!(WeekdaySet::ALL, WeekdaySet::from_array([Mon, Tue, Wed, Thu, Fri, Sat, Sun]));
-//     /// ```
-//     pub const fn from_array<const C: usize>(days: [Weekday; C]) -> Self {
-//         let mut acc = Self::EMPTY;
-//         let mut idx = 0;
-//         while idx < days.len() {
-//             acc.0 |= Self::single(days[idx]).0;
-//             idx += 1;
-//         }
-//         acc
-//     }
+    pub fn init(value: u8) Self {
+        return Self{
+            .value = value,
+        };
+    }
 
-//     /// Create a `WeekdaySet` from a single [`Weekday`].
-//     pub const fn single(weekday: Weekday) -> Self {
-//         match weekday {
-//             Weekday::Mon => Self(0b000_0001),
-//             Weekday::Tue => Self(0b000_0010),
-//             Weekday::Wed => Self(0b000_0100),
-//             Weekday::Thu => Self(0b000_1000),
-//             Weekday::Fri => Self(0b001_0000),
-//             Weekday::Sat => Self(0b010_0000),
-//             Weekday::Sun => Self(0b100_0000),
-//         }
-//     }
+    /// Create a `WeekdaySet` from an array of [`Weekday`]s.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::EMPTY, WeekdaySet::from_array([]));
+    /// assert_eq!(WeekdaySet::single(Mon), WeekdaySet::from_array([Mon]));
+    /// assert_eq!(WeekdaySet::ALL, WeekdaySet::from_array([Mon, Tue, Wed, Thu, Fri, Sat, Sun]));
+    /// ```
+    pub fn from_array(days: []Weekday) Self {
+        var acc = Self.EMPTY;
+        var idx = 0;
+        while (idx < days.len()) {
+            acc.value |= Self.single(days[idx]).value;
+            // acc.0 |= Self::single(days[idx]).0;
+            idx += 1;
+        }
+        return acc;
+    }
 
-//     /// Returns `Some(day)` if this collection contains exactly one day.
-//     ///
-//     /// Returns `None` otherwise.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).single_day(), Some(Mon));
-//     /// assert_eq!(WeekdaySet::from_array([Mon, Tue]).single_day(), None);
-//     /// assert_eq!(WeekdaySet::EMPTY.single_day(), None);
-//     /// assert_eq!(WeekdaySet::ALL.single_day(), None);
-//     /// ```
-//     pub const fn single_day(self) -> Option<Weekday> {
-//         match self {
-//             Self(0b000_0001) => Some(Weekday::Mon),
-//             Self(0b000_0010) => Some(Weekday::Tue),
-//             Self(0b000_0100) => Some(Weekday::Wed),
-//             Self(0b000_1000) => Some(Weekday::Thu),
-//             Self(0b001_0000) => Some(Weekday::Fri),
-//             Self(0b010_0000) => Some(Weekday::Sat),
-//             Self(0b100_0000) => Some(Weekday::Sun),
-//             _ => None,
-//         }
-//     }
+    /// Create a `WeekdaySet` from a single [`Weekday`].
+    pub fn single(weekday: Weekday) Self {
+        return switch (weekday) {
+            Weekday.Mon => Self.init(0b000_0001),
+            Weekday.Tue => Self.init(0b000_0010),
+            Weekday.Wed => Self.init(0b000_0100),
+            Weekday.Thu => Self.init(0b000_1000),
+            Weekday.Fri => Self.init(0b001_0000),
+            Weekday.Sat => Self.init(0b010_0000),
+            Weekday.Sun => Self.init(0b100_0000),
+        };
+    }
 
-//     /// Adds a day to the collection.
-//     ///
-//     /// Returns `true` if the day was new to the collection.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// let mut weekdays = WeekdaySet::single(Mon);
-//     /// assert!(weekdays.insert(Tue));
-//     /// assert!(!weekdays.insert(Tue));
-//     /// ```
-//     pub fn insert(&mut self, day: Weekday) -> bool {
-//         if self.contains(day) {
-//             return false;
-//         }
+    /// Returns `Some(day)` if this collection contains exactly one day.
+    ///
+    /// Returns `None` otherwise.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).single_day(), Some(Mon));
+    /// assert_eq!(WeekdaySet::from_array([Mon, Tue]).single_day(), None);
+    /// assert_eq!(WeekdaySet::EMPTY.single_day(), None);
+    /// assert_eq!(WeekdaySet::ALL.single_day(), None);
+    /// ```
+    pub fn single_day(self: *Self) ?Weekday {
+        return switch (self) {
+            Self.init(0b000_0001) => Weekday.Mon,
+            Self.init(0b000_0010) => Weekday.Tue,
+            Self.init(0b000_0100) => Weekday.Wed,
+            Self.init(0b000_1000) => Weekday.Thu,
+            Self.init(0b001_0000) => Weekday.Fri,
+            Self.init(0b010_0000) => Weekday.Sat,
+            Self.init(0b100_0000) => Weekday.Sun,
+            else => null,
+        };
+    }
 
-//         self.0 |= Self::single(day).0;
-//         true
-//     }
+    /// Adds a day to the collection.
+    ///
+    /// Returns `true` if the day was new to the collection.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// let mut weekdays = WeekdaySet::single(Mon);
+    /// assert!(weekdays.insert(Tue));
+    /// assert!(!weekdays.insert(Tue));
+    /// ```
+    pub fn insert(self: *Self, day: Weekday) bool {
+        if (self.contains(day)) {
+            return false;
+        }
+        self.value |= Self.single(day).value;
+        // self.0 |= Self::single(day).0;
+        return true;
+    }
 
-//     /// Removes a day from the collection.
-//     ///
-//     /// Returns `true` if the collection did contain the day.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// let mut weekdays = WeekdaySet::single(Mon);
-//     /// assert!(weekdays.remove(Mon));
-//     /// assert!(!weekdays.remove(Mon));
-//     /// ```
-//     pub fn remove(&mut self, day: Weekday) -> bool {
-//         if self.contains(day) {
-//             self.0 &= !Self::single(day).0;
-//             return true;
-//         }
+    /// Removes a day from the collection.
+    ///
+    /// Returns `true` if the collection did contain the day.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// let mut weekdays = WeekdaySet::single(Mon);
+    /// assert!(weekdays.remove(Mon));
+    /// assert!(!weekdays.remove(Mon));
+    /// ```
+    pub fn remove(self: *Self, day: Weekday) bool {
+        if (self.contains(day)) {
+            self.value &= ~Self.single(day).value;
+            // self.0 &= !Self::single(day).0;
+            return true;
+        }
 
-//         false
-//     }
+        return false;
+    }
 
-//     /// Returns `true` if `other` contains all days in `self`.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert!(WeekdaySet::single(Mon).is_subset(WeekdaySet::ALL));
-//     /// assert!(!WeekdaySet::single(Mon).is_subset(WeekdaySet::EMPTY));
-//     /// assert!(WeekdaySet::EMPTY.is_subset(WeekdaySet::single(Mon)));
-//     /// ```
-//     pub const fn is_subset(self, other: Self) -> bool {
-//         self.intersection(other).0 == self.0
-//     }
+    /// Returns `true` if `other` contains all days in `self`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert!(WeekdaySet::single(Mon).is_subset(WeekdaySet::ALL));
+    /// assert!(!WeekdaySet::single(Mon).is_subset(WeekdaySet::EMPTY));
+    /// assert!(WeekdaySet::EMPTY.is_subset(WeekdaySet::single(Mon)));
+    /// ```
+    pub fn is_subset(self: *Self, other: Self) bool {
+        return self.intersection(other).value == self.value;
+    }
 
-//     /// Returns days that are in both `self` and `other`.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-//     /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Tue)), WeekdaySet::EMPTY);
-//     /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-//     /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::EMPTY), WeekdaySet::EMPTY);
-//     /// ```
-//     pub const fn intersection(self, other: Self) -> Self {
-//         Self(self.0 & other.0)
-//     }
+    /// Returns days that are in both `self` and `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Tue)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::EMPTY), WeekdaySet::EMPTY);
+    /// ```
+    pub fn intersection(self: *Self, other: Self) Self {
+        return Self.init(self.value & other.value);
+    }
 
-//     /// Returns days that are in either `self` or `other`.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-//     /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
-//     /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::single(Mon)), WeekdaySet::ALL);
-//     /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::EMPTY), WeekdaySet::ALL);
-//     /// ```
-//     pub const fn union(self, other: Self) -> Self {
-//         Self(self.0 | other.0)
-//     }
+    /// Returns days that are in either `self` or `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
+    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::single(Mon)), WeekdaySet::ALL);
+    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::EMPTY), WeekdaySet::ALL);
+    /// ```
+    pub fn union_weekdayset(self: *Self, other: Self) Self {
+        return Self.init(self.value | other.value);
+    }
 
-//     /// Returns days that are in `self` or `other` but not in both.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-//     /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
-//     /// assert_eq!(
-//     ///     WeekdaySet::ALL.symmetric_difference(WeekdaySet::single(Mon)),
-//     ///     WeekdaySet::from_array([Tue, Wed, Thu, Fri, Sat, Sun]),
-//     /// );
-//     /// assert_eq!(WeekdaySet::ALL.symmetric_difference(WeekdaySet::EMPTY), WeekdaySet::ALL);
-//     /// ```
-//     pub const fn symmetric_difference(self, other: Self) -> Self {
-//         Self(self.0 ^ other.0)
-//     }
+    /// Returns days that are in `self` or `other` but not in both.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
+    /// assert_eq!(
+    ///     WeekdaySet::ALL.symmetric_difference(WeekdaySet::single(Mon)),
+    ///     WeekdaySet::from_array([Tue, Wed, Thu, Fri, Sat, Sun]),
+    /// );
+    /// assert_eq!(WeekdaySet::ALL.symmetric_difference(WeekdaySet::EMPTY), WeekdaySet::ALL);
+    /// ```
+    pub fn symmetric_difference(self: *Self, other: Self) Self {
+        return Self.init(self.value ^ other.value);
+    }
 
-//     /// Returns days that are in `self` but not in `other`.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-//     /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Tue)), WeekdaySet::single(Mon));
-//     /// assert_eq!(WeekdaySet::EMPTY.difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-//     /// ```
-//     pub const fn difference(self, other: Self) -> Self {
-//         Self(self.0 & !other.0)
-//     }
+    /// Returns days that are in `self` but not in `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Tue)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::EMPTY.difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// ```
+    pub fn difference(self: *Self, other: Self) Self {
+        return Self.init(self.value & !other.value);
+    }
 
-//     /// Get the first day in the collection, starting from Monday.
-//     ///
-//     /// Returns `None` if the collection is empty.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).first(), Some(Mon));
-//     /// assert_eq!(WeekdaySet::single(Tue).first(), Some(Tue));
-//     /// assert_eq!(WeekdaySet::ALL.first(), Some(Mon));
-//     /// assert_eq!(WeekdaySet::EMPTY.first(), None);
-//     /// ```
-//     pub const fn first(self) -> Option<Weekday> {
-//         if self.is_empty() {
-//             return None;
-//         }
+    /// Get the first day in the collection, starting from Monday.
+    ///
+    /// Returns `None` if the collection is empty.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).first(), Some(Mon));
+    /// assert_eq!(WeekdaySet::single(Tue).first(), Some(Tue));
+    /// assert_eq!(WeekdaySet::ALL.first(), Some(Mon));
+    /// assert_eq!(WeekdaySet::EMPTY.first(), None);
+    /// ```
+    pub fn first(self: *Self) ?Weekday {
+        if (self.is_empty()) {
+            return null;
+        }
 
-//         // Find the first non-zero bit.
-//         let bit = 1 << self.0.trailing_zeros();
+        // Find the first non-zero bit.
 
-//         Self(bit).single_day()
-//     }
+        const bit = 1 << @ctz(self.value);
 
-//     /// Get the last day in the collection, starting from Sunday.
-//     ///
-//     /// Returns `None` if the collection is empty.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).last(), Some(Mon));
-//     /// assert_eq!(WeekdaySet::single(Sun).last(), Some(Sun));
-//     /// assert_eq!(WeekdaySet::from_array([Mon, Tue]).last(), Some(Tue));
-//     /// assert_eq!(WeekdaySet::EMPTY.last(), None);
-//     /// ```
-//     pub fn last(self) -> Option<Weekday> {
-//         if self.is_empty() {
-//             return None;
-//         }
+        return Self.init(bit).single_day();
+    }
 
-//         // Find the last non-zero bit.
-//         let bit = 1 << (7 - self.0.leading_zeros());
+    /// Get the last day in the collection, starting from Sunday.
+    ///
+    /// Returns `None` if the collection is empty.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).last(), Some(Mon));
+    /// assert_eq!(WeekdaySet::single(Sun).last(), Some(Sun));
+    /// assert_eq!(WeekdaySet::from_array([Mon, Tue]).last(), Some(Tue));
+    /// assert_eq!(WeekdaySet::EMPTY.last(), None);
+    /// ```
+    pub fn last(self: *Self) ?Weekday {
+        if (self.is_empty()) {
+            return null;
+        }
 
-//         Self(bit).single_day()
-//     }
+        // Find the last non-zero bit.
 
-//     /// Split the collection in two at the given day.
-//     ///
-//     /// Returns a tuple `(before, after)`. `before` contains all days starting from Monday
-//     /// up to but __not__ including `weekday`. `after` contains all days starting from `weekday`
-//     /// up to and including Sunday.
-//     const fn split_at(self, weekday: Weekday) -> (Self, Self) {
-//         let days_after = 0b1000_0000 - Self::single(weekday).0;
-//         let days_before = days_after ^ 0b0111_1111;
-//         (Self(self.0 & days_before), Self(self.0 & days_after))
-//     }
+        const bit = 1 << (7 - @clz(self.value));
 
-//     /// Iterate over the [`Weekday`]s in the collection starting from a given day.
-//     ///
-//     /// Wraps around from Sunday to Monday if necessary.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// let weekdays = WeekdaySet::from_array([Mon, Wed, Fri]);
-//     /// let mut iter = weekdays.iter(Wed);
-//     /// assert_eq!(iter.next(), Some(Wed));
-//     /// assert_eq!(iter.next(), Some(Fri));
-//     /// assert_eq!(iter.next(), Some(Mon));
-//     /// assert_eq!(iter.next(), None);
-//     /// ```
-//     pub const fn iter(self, start: Weekday) -> WeekdaySetIter {
-//         WeekdaySetIter { days: self, start }
-//     }
+        return Self.init(bit).single_day();
+    }
 
-//     /// Returns `true` if the collection contains the given day.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert!(WeekdaySet::single(Mon).contains(Mon));
-//     /// assert!(WeekdaySet::from_array([Mon, Tue]).contains(Tue));
-//     /// assert!(!WeekdaySet::single(Mon).contains(Tue));
-//     /// ```
-//     pub const fn contains(self, day: Weekday) -> bool {
-//         self.0 & Self::single(day).0 != 0
-//     }
+    /// Split the collection in two at the given day.
+    ///
+    /// Returns a tuple `(before, after)`. `before` contains all days starting from Monday
+    /// up to but __not__ including `weekday`. `after` contains all days starting from `weekday`
+    /// up to and including Sunday.
+    fn split_at(self: *Self, weekday: Weekday) struct { Self, Self } {
+        const days_after = 0b1000_0000 - Self.single(weekday).value;
+        const days_before = days_after ^ 0b0111_1111;
+        return struct { Self.init(self.value & days_before), Self.init(self.value & days_after) };
+    }
 
-//     /// Returns `true` if the collection is empty.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::{Weekday, WeekdaySet};
-//     /// assert!(WeekdaySet::EMPTY.is_empty());
-//     /// assert!(!WeekdaySet::single(Weekday::Mon).is_empty());
-//     /// ```
-//     pub const fn is_empty(self) -> bool {
-//         self.len() == 0
-//     }
-//     /// Returns the number of days in the collection.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// # use chrono::WeekdaySet;
-//     /// use chrono::Weekday::*;
-//     /// assert_eq!(WeekdaySet::single(Mon).len(), 1);
-//     /// assert_eq!(WeekdaySet::from_array([Mon, Wed, Fri]).len(), 3);
-//     /// assert_eq!(WeekdaySet::ALL.len(), 7);
-//     /// ```
-//     pub const fn len(self) -> u8 {
-//         self.0.count_ones() as u8
-//     }
+    // /// Iterate over the [`Weekday`]s in the collection starting from a given day.
+    // ///
+    // /// Wraps around from Sunday to Monday if necessary.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// # use chrono::WeekdaySet;
+    // /// use chrono::Weekday::*;
+    // /// let weekdays = WeekdaySet::from_array([Mon, Wed, Fri]);
+    // /// let mut iter = weekdays.iter(Wed);
+    // /// assert_eq!(iter.next(), Some(Wed));
+    // /// assert_eq!(iter.next(), Some(Fri));
+    // /// assert_eq!(iter.next(), Some(Mon));
+    // /// assert_eq!(iter.next(), None);
+    // /// ```
+    // pub const fn iter(self, start: Weekday) -> WeekdaySetIter {
+    //     WeekdaySetIter { days: self, start }
+    // }
 
-//     /// An empty `WeekdaySet`.
-//     pub const EMPTY: Self = Self(0b000_0000);
-//     /// A `WeekdaySet` containing all seven `Weekday`s.
-//     pub const ALL: Self = Self(0b111_1111);
-// }
+    // /// Returns `true` if the collection contains the given day.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// # use chrono::WeekdaySet;
+    // /// use chrono::Weekday::*;
+    // /// assert!(WeekdaySet::single(Mon).contains(Mon));
+    // /// assert!(WeekdaySet::from_array([Mon, Tue]).contains(Tue));
+    // /// assert!(!WeekdaySet::single(Mon).contains(Tue));
+    // /// ```
+    // pub const fn contains(self, day: Weekday) -> bool {
+    //     self.0 & Self::single(day).0 != 0
+    // }
+
+    // /// Returns `true` if the collection is empty.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// # use chrono::{Weekday, WeekdaySet};
+    // /// assert!(WeekdaySet::EMPTY.is_empty());
+    // /// assert!(!WeekdaySet::single(Weekday::Mon).is_empty());
+    // /// ```
+    // pub const fn is_empty(self) -> bool {
+    //     self.len() == 0
+    // }
+    // /// Returns the number of days in the collection.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// # use chrono::WeekdaySet;
+    // /// use chrono::Weekday::*;
+    // /// assert_eq!(WeekdaySet::single(Mon).len(), 1);
+    // /// assert_eq!(WeekdaySet::from_array([Mon, Wed, Fri]).len(), 3);
+    // /// assert_eq!(WeekdaySet::ALL.len(), 7);
+    // /// ```
+    // pub const fn len(self) -> u8 {
+    //     self.0.count_ones() as u8
+    // }
+
+    /// An empty `WeekdaySet`.
+    pub const EMPTY: Self = Self(0b000_0000);
+    /// A `WeekdaySet` containing all seven `Weekday`s.
+    pub const ALL: Self = Self(0b111_1111);
+};
 
 // /// Print the underlying bitmask, padded to 7 bits.
 // ///

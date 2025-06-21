@@ -28,6 +28,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const iana_time_zone = b.dependency("iana_time_zone", .{});
+
+    lib_mod.addImport("iana_time_zone", iana_time_zone.module("iana_time_zone"));
+
     // Now, we will create a static library based on the module we created above.
     // This creates a `std.Build.Step.Compile`, which is the build step responsible
     // for actually invoking the compiler.

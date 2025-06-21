@@ -466,7 +466,6 @@ fn assert_8th_bit_invariant(days: WeekdaySet) void {
 //     try testing.expect(std.mem.eql(u8, buffer, "WeekdaySet(10000000)"));
 // }
 
-//     #[test]
 test "bitwise_set_operations_preserve_8th_bit_invariant" {
     const start, const end = WeekdaySet.iter_all();
     for (start..end) |v1| {
@@ -478,9 +477,4 @@ test "bitwise_set_operations_preserve_8th_bit_invariant" {
             assert_8th_bit_invariant(set1.symmetric_difference(set2));
         }
     }
-    // for set1 in WeekdaySet::iter_all() {
-    //     for set2 in WeekdaySet::iter_all() {
-
-    //     }
-    // }
 }

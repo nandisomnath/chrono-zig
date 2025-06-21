@@ -6,13 +6,11 @@ Chrono: Timezone-aware date and time handling
 Chrono aims to provide all functionality needed to do correct operations on dates and times in the
 [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
 
-* The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
+* The `DateTime` type is timezone-aware
   by default, with separate timezone-naive types.
-* Operations that may produce an invalid or ambiguous date and time return `Option` or
-  [`MappedLocalTime`](https://docs.rs/chrono/latest/chrono/offset/enum.MappedLocalTime.html).
+* Operations that may produce an invalid or ambiguous date and time return `Option` or `MappedLocalTime`
 * Configurable parsing and formatting with an `strftime` inspired date and time formatting syntax.
-* The [`Local`](https://docs.rs/chrono/latest/chrono/offset/struct.Local.html) timezone works with
-  the current timezone of the OS.
+* The `Local` timezone works with the current timezone of the OS.
 * Types and operations are implemented to be reasonably efficient.
 
 Timezone data is not shipped with chrono by default to limit binary sizes. Use the companion crate

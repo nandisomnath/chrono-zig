@@ -34,9 +34,9 @@ Not available for now
 
 
 
-## Rust version requirements
+## Zig version requirements
 
-The Minimum Supported Zig Version is currently **Rust 0.14.0**.
+The Minimum Supported Zig Version is currently **Zig 0.14.0**.
 
 
 ## License

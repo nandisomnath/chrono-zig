@@ -619,38 +619,43 @@ pub const NaiveDate = struct {
         return YearFlags.new(@intCast((self.yof() & YEAR_FLAGS_MASK)));
     }
 
+    /// Add a duration of `i32` days to the date.
+    pub fn add_days(self: *Self, days: i32) ?Self {
+        // Fast path if the result is within the same year.
+        // Also `DateTime::checked_(add|sub)_days` relies on this path, because if the value remains
+        // within the year it doesn't do a check if the year is in range.
+        // This way `DateTime:checked_(add|sub)_days(Days::new(0))` can be a no-op on dates were the
+        // local datetime is beyond `NaiveDate::{MIN, MAX}.
+        const _ordinal = try std.math.add(i32,  ((self.yof() & ORDINAL_MASK) >> 4) , days);
+        
+        
+        if (_ordinal > 0 and _ordinal <= (365 + @as(i32, self.leap_year()))) {
+            const year_and_flags = self.yof() & !ORDINAL_MASK;
+            return NaiveDate.from_yof(year_and_flags | (_ordinal << 4));
+        }
+        
+        // do the full check
+        const _year = self.year();
+        var year_div_400, const year_mod_400 = div_mod_floor(_year, 400);
+        const cycle = yo_to_cycle(@intCast(year_mod_400), self.ordinal());
+        // const  cycle = try_opt!((@as(i32, cycle)).checked_add(days));
+        const _cycle = try std.math.add(i32, cycle, days);
+        const  cycle_div_400y, const __cycle = div_mod_floor(_cycle, 146_097);
+        year_div_400 += cycle_div_400y;
+
+        const _year_mod_400, const __ordinal = cycle_to_yo(__cycle);
+        
+        const _flags = YearFlags.from_year_mod_400(_year_mod_400);
+        return NaiveDate.from_ordinal_and_flags(year_div_400 * 400 + @as(i32, _year_mod_400), __ordinal, _flags);
+    }
+
 };
 
 
 
 // impl NaiveDate {
 
-//     /// Add a duration of `i32` days to the date.
-//     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
-//         // Fast path if the result is within the same year.
-//         // Also `DateTime::checked_(add|sub)_days` relies on this path, because if the value remains
-//         // within the year it doesn't do a check if the year is in range.
-//         // This way `DateTime:checked_(add|sub)_days(Days::new(0))` can be a no-op on dates were the
-//         // local datetime is beyond `NaiveDate::{MIN, MAX}.
-//         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
-//         if let Some(ordinal) = ((self.yof() & ORDINAL_MASK) >> 4).checked_add(days) {
-//             if ordinal > 0 && ordinal <= (365 + self.leap_year() as i32) {
-//                 let year_and_flags = self.yof() & !ORDINAL_MASK;
-//                 return Some(NaiveDate::from_yof(year_and_flags | (ordinal << 4)));
-//             }
-//         }
-//         // do the full check
-//         let year = self.year();
-//         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-//         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal());
-//         let cycle = try_opt!((cycle as i32).checked_add(days));
-//         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-//         year_div_400 += cycle_div_400y;
 
-//         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-//         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-//         NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
-//     }
 
 //     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
 //     ///

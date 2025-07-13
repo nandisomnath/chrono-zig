@@ -37,11 +37,11 @@ const std = @import("std");
 const internals = @import("internals.zig");
 const weekday = @import("../weekday.zig");
 const month = @import("../month.zig");
-const Days = @import("root.zig").Days;
+const naive = @import("../naive/root.zig");
 const isoweek = @import("isoweek.zig");
 
 
-
+const Days = naive.Days;
 const Months = month.Months;
 const IsoWeek = isoweek.IsoWeek;
 const Weekday = weekday.Weekday;
@@ -649,6 +649,25 @@ pub const NaiveDate = struct {
         return NaiveDate.from_ordinal_and_flags(year_div_400 * 400 + @as(i32, _year_mod_400), __ordinal, _flags);
     }
 
+
+    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+    ///
+    /// let dt: NaiveDateTime = d.and_time(t);
+    /// assert_eq!(dt.date(), d);
+    /// assert_eq!(dt.time(), t);
+    /// ```
+    pub inline fn and_time(self: *Self, time: NaiveTime)  NaiveDateTime {
+        return NaiveDateTime.new(*self, time);
+    }
+
 };
 
 
@@ -657,25 +676,7 @@ pub const NaiveDate = struct {
 
 
 
-//     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-//     /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
-//     ///
-//     /// let dt: NaiveDateTime = d.and_time(t);
-//     /// assert_eq!(dt.date(), d);
-//     /// assert_eq!(dt.time(), t);
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
-//         NaiveDateTime::new(*self, time)
-//     }
+
 
 
 //     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.

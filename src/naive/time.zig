@@ -273,8 +273,8 @@ pub const NaiveTime = struct {
         min: u32,
         sec: u32,
         milli: u32,
-    ) NaiveTime {
-        const nano = try std.math.mul(u32, milli, 1_000_000);
+    ) ?NaiveTime {
+        const nano = std.math.mul(u32, milli, 1_000_000) catch unreachable;
         return NaiveTime.from_hms_nano_opt(_hour, min, sec, nano);
     }
 
@@ -382,7 +382,7 @@ pub const NaiveTime = struct {
     }
 
     /// Returns a triple of the hour, minute and second numbers.
-    pub fn hms(self: *Self) struct { u32, u32, u32 } {
+    pub fn hms(self: *const Self) struct { u32, u32, u32 } {
         const _sec = self.secs % 60;
         const _mins = self.secs / 60;
         const _min = _mins % 60;
@@ -492,7 +492,7 @@ pub const NaiveTime = struct {
     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().hour(), 23);
     /// ```
 
-    fn hour(self: *Self) u32 {
+    fn hour(self: *const Self) u32 {
         return self.hms()[0];
     }
 
@@ -534,7 +534,7 @@ pub const NaiveTime = struct {
     /// # }
     /// ```
     
-    fn second(self: *Self) u32 {
+    fn second(self: *const Self) u32 {
         return self.hms()[2];
     }
 
@@ -587,7 +587,7 @@ pub const NaiveTime = struct {
     /// assert_eq!(dt.with_hour(24), None);
     /// ```
     
-    fn with_hour(self: *Self, _hour: u32) ?NaiveTime {
+    fn with_hour(self: *const Self, _hour: u32) ?NaiveTime {
         if (_hour >= 24) {
             return null;
         }
@@ -614,7 +614,7 @@ pub const NaiveTime = struct {
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
 
-    fn with_minute(self: *Self, min: u32) NaiveTime {
+    fn with_minute(self: *const Self, min: u32) ?NaiveTime {
         if (min >= 60) {
             return null;
         }
@@ -643,7 +643,7 @@ pub const NaiveTime = struct {
     /// );
     /// assert_eq!(dt.with_second(60), None);
     /// ```
-    fn with_second(self: *Self, sec: u32) NaiveTime {
+    fn with_second(self: *const Self, sec: u32) ?NaiveTime {
         if (sec >= 60) {
             return null;
         }
@@ -1534,6 +1534,7 @@ pub const NaiveTime = struct {
 // TODO: write the test
 const testing = std.testing;
 // #[test]
+
 test "test_time_from_hms_milli" {
     try testing.expectEqual(
         NaiveTime.from_hms_milli_opt(3, 5, 7, 0),
@@ -1545,7 +1546,7 @@ test "test_time_from_hms_milli" {
     );
     try testing.expectEqual(
         NaiveTime.from_hms_milli_opt(3, 5, 59, 1_999),
-        NaiveTime.from_hms_nano_opt(3, 5, 59, 1_999_000_000).unwrap()
+        NaiveTime.from_hms_nano_opt(3, 5, 59, 1_999_000_000).?
     );
     try testing.expectEqual(NaiveTime.from_hms_milli_opt(3, 5, 59, 2_000), null);
     try testing.expectEqual(NaiveTime.from_hms_milli_opt(3, 5, 59, 5_000), null); // overflow check
@@ -1599,10 +1600,10 @@ test "test_time_hms" {
         NaiveTime.from_hms_opt(3, 5, 7).?.with_minute(59),
         NaiveTime.from_hms_opt(3, 59, 7).?
     );
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_minute(60), null);
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_minute(std.math.maxInt(u32)), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_minute(60), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_minute(std.math.maxInt(u32)), null);
 
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().second(), 7);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.second(), 7);
     try testing.expectEqual(
         NaiveTime.from_hms_opt(3, 5, 7).?.with_second(0),
         NaiveTime.from_hms_opt(3, 5, 0).?
@@ -1611,8 +1612,8 @@ test "test_time_hms" {
         NaiveTime.from_hms_opt(3, 5, 7).?.with_second(59),
         NaiveTime.from_hms_opt(3, 5, 59).?
     );
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_second(60), null);
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_second(std.math.maxInt(u32)), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_second(60), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_second(std.math.maxInt(u32)), null);
 }
 
 

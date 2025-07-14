@@ -1536,86 +1536,94 @@ pub const NaiveTime = struct {
 // use super::NaiveTime;
 // use crate::{FixedOffset, TimeDelta, Timelike};
 
-// #[test]
-// fn test_time_from_hms_milli() {
-//     assert_eq!(
-//         NaiveTime::from_hms_milli_opt(3, 5, 7, 0),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 0).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_milli_opt(3, 5, 7, 777),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_000_000).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_milli_opt(3, 5, 59, 1_999),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_000_000).unwrap())
-//     );
-//     assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 2_000), None);
-//     assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 5_000), None); // overflow check
-//     assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, u32::MAX), None);
-// }
 
+// TODO: write the test
+const testing = std.testing;
 // #[test]
-// fn test_time_from_hms_micro() {
-//     assert_eq!(
-//         NaiveTime::from_hms_micro_opt(3, 5, 7, 0),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 0).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_micro_opt(3, 5, 7, 333),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 333_000).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_micro_opt(3, 5, 7, 777_777),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_777_000).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_micro_opt(3, 5, 59, 1_999_999),
-//         Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_999_000).unwrap())
-//     );
-//     assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 2_000_000), None);
-//     assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 5_000_000), None); // overflow check
-//     assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, u32::MAX), None);
-// }
+test "test_time_from_hms_milli" {
+    try testing.expectEqual(
+        NaiveTime.from_hms_milli_opt(3, 5, 7, 0),
+        NaiveTime.from_hms_nano_opt(3, 5, 7, 0).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_milli_opt(3, 5, 7, 777),
+        NaiveTime.from_hms_nano_opt(3, 5, 7, 777_000_000).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_milli_opt(3, 5, 59, 1_999),
+        NaiveTime.from_hms_nano_opt(3, 5, 59, 1_999_000_000).unwrap()
+    );
+    try testing.expectEqual(NaiveTime.from_hms_milli_opt(3, 5, 59, 2_000), null);
+    try testing.expectEqual(NaiveTime.from_hms_milli_opt(3, 5, 59, 5_000), null); // overflow check
+    try testing.expectEqual(NaiveTime.from_hms_milli_opt(3, 5, 59, std.math.maxInt(u32)), null);
+
+   
+}
 
 // #[test]
-// fn test_time_hms() {
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().hour(), 3);
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_hour(0),
-//         Some(NaiveTime::from_hms_opt(0, 5, 7).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_hour(23),
-//         Some(NaiveTime::from_hms_opt(23, 5, 7).unwrap())
-//     );
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_hour(24), None);
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_hour(u32::MAX), None);
+test "test_time_from_hms_micro" {
+    try testing.expectEqual(
+        NaiveTime.from_hms_micro_opt(3, 5, 7, 0),
+        NaiveTime.from_hms_nano_opt(3, 5, 7, 0).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_micro_opt(3, 5, 7, 333),
+        NaiveTime.from_hms_nano_opt(3, 5, 7, 333_000).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_micro_opt(3, 5, 7, 777_777),
+        NaiveTime.from_hms_nano_opt(3, 5, 7, 777_777_000).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_micro_opt(3, 5, 59, 1_999_999),
+        NaiveTime.from_hms_nano_opt(3, 5, 59, 1_999_999_000).?
+    );
+    try testing.expectEqual(NaiveTime.from_hms_micro_opt(3, 5, 59, 2_000_000), null);
+    try testing.expectEqual(NaiveTime.from_hms_micro_opt(3, 5, 59, 5_000_000), null); // overflow check
+    try testing.expectEqual(NaiveTime.from_hms_micro_opt(3, 5, 59, std.math.maxInt(u32)), null);
+}
 
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().minute(), 5);
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_minute(0),
-//         Some(NaiveTime::from_hms_opt(3, 0, 7).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_minute(59),
-//         Some(NaiveTime::from_hms_opt(3, 59, 7).unwrap())
-//     );
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_minute(60), None);
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_minute(u32::MAX), None);
 
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().second(), 7);
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_second(0),
-//         Some(NaiveTime::from_hms_opt(3, 5, 0).unwrap())
-//     );
-//     assert_eq!(
-//         NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_second(59),
-//         Some(NaiveTime::from_hms_opt(3, 5, 59).unwrap())
-//     );
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_second(60), None);
-//     assert_eq!(NaiveTime::from_hms_opt(3, 5, 7).unwrap().with_second(u32::MAX), None);
-// }
+test "test_time_hms" {
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().hour(), 3);
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_hour(0),
+        NaiveTime.from_hms_opt(0, 5, 7).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(23),
+        Some(NaiveTime.from_hms_opt(23, 5, 7).?)
+    );
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(24), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(std.math.maxInt(u32)), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.minute(), 5);
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_minute(0),
+        NaiveTime.from_hms_opt(3, 0, 7).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_minute(59),
+        NaiveTime.from_hms_opt(3, 59, 7).?
+    );
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_minute(60), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_minute(std.math.maxInt(u32)), null);
+
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().second(), 7);
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_second(0),
+        NaiveTime.from_hms_opt(3, 5, 0).?
+    );
+    try testing.expectEqual(
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_second(59),
+        NaiveTime.from_hms_opt(3, 5, 59).?
+    );
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_second(60), null);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_second(std.math.maxInt(u32)), null);
+}
+
+
+
+
 
 // #[test]
 // fn test_time_add() {

@@ -8,11 +8,13 @@ pub const YearFlags = internals.YearFlags;
 // pub const datetime = @import("datetime/root.zig");
 
 pub const date = @import("date.zig");
+pub const time = @import("time.zig");
 pub const NaiveDate = date.NaiveDate;
 
 test  {
     _ = internals;
     _ = date;
+    _ = time;
 }
 
 // pub(crate) mod isoweek;

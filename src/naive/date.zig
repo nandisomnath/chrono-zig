@@ -20,6 +20,10 @@
 // };
 // use crate::month::Months;
 // use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
+const NaiveTime = @import("time.zig").NaiveTime;
+// const NaiveDateTime = @import("datetime.zig").NaiveDateTime;
+
+
 // use crate::{Datelike, TimeDelta, Weekday};
 // use crate::{expect, try_opt};
 
@@ -650,23 +654,23 @@ pub const NaiveDate = struct {
     }
 
 
-    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    ///
-    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
-    ///
-    /// let dt: NaiveDateTime = d.and_time(t);
-    /// assert_eq!(dt.date(), d);
-    /// assert_eq!(dt.time(), t);
-    /// ```
-    pub inline fn and_time(self: *Self, time: NaiveTime)  NaiveDateTime {
-        return NaiveDateTime.new(*self, time);
-    }
+    // /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    // ///
+    // /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    // /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+    // ///
+    // /// let dt: NaiveDateTime = d.and_time(t);
+    // /// assert_eq!(dt.date(), d);
+    // /// assert_eq!(dt.time(), t);
+    // /// ```
+    // pub inline fn and_time(self: *Self, time: NaiveTime)  NaiveDateTime {
+    //     return NaiveDateTime.new(*self, time);
+    // }
 
 };
 

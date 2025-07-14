@@ -308,7 +308,7 @@ pub const NaiveTime = struct {
         sec: u32,
         micro: u32,
     ) ?NaiveTime {
-        const nano = try std.math.mul(u32, micro, 1_000);
+        const nano = std.math.mul(u32, micro, 1_000) catch unreachable;
         return NaiveTime.from_hms_nano_opt(hour, min, sec, nano);
     }
 
@@ -337,7 +337,13 @@ pub const NaiveTime = struct {
     /// assert!(from_hmsn_opt(23, 59, 59, 2_000_000_000).is_none());
     /// ```
     pub inline fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) ?NaiveTime {
-        if ((hour >= 24) || (min >= 60) || (sec >= 60) || (nano >= 1_000_000_000 and sec != 59) || nano >= 2_000_000_000) {
+        if (
+            (hour >= 24) or 
+            (min >= 60) or 
+            (sec >= 60) or 
+            ((nano >= 1_000_000_000) and (sec != 59)) or 
+            (nano >= 2_000_000_000)
+        ) {
             return null;
         }
         const secs = hour * 3600 + min * 60 + sec;
@@ -486,6 +492,244 @@ pub const NaiveTime = struct {
     pub inline fn nanosecond(self: *Self) u32 {
         return self.frac;
     }
+
+
+
+        /// Returns the hour number from 0 to 23.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().hour(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().hour(), 23);
+    /// ```
+
+    fn hour(self: *Self) u32 {
+        return self.hms().0;
+    }
+
+    /// Returns the minute number from 0 to 59.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().minute(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().minute(), 56);
+    /// ```
+    fn inline minute(self: Self) u32 {
+        return self.hms().1;
+    }
+
+    /// Returns the second number from 0 to 59.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().second(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().second(), 4);
+    /// ```
+    ///
+    /// This method never returns 60 even when it is a leap second.
+    /// ([Why?](#leap-second-handling))
+    /// Use the proper [formatting method](#method.format) to get a human-readable representation.
+    ///
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
+    /// # use chrono::{NaiveTime, Timelike};
+    /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+    /// assert_eq!(leap.second(), 59);
+    /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
+    /// # }
+    /// ```
+    
+    fn inline second(self: *Self) u32 {
+        return self.hms().2;
+    }
+
+    /// Returns the number of nanoseconds since the whole non-leap second.
+    /// The range from 1,000,000,000 to 1,999,999,999 represents
+    /// the [leap second](#leap-second-handling).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().nanosecond(), 0);
+    /// assert_eq!(
+    ///     NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().nanosecond(),
+    ///     12_345_678
+    /// );
+    /// ```
+    ///
+    /// Leap seconds may have seemingly out-of-range return values.
+    /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
+    /// use the proper [formatting method](#method.format) to get a human-readable representation.
+    ///
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
+    /// # use chrono::{NaiveTime, Timelike};
+    /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+    /// assert_eq!(leap.nanosecond(), 1_000_000_000);
+    /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
+    /// # }
+    /// ```
+    
+    fn nanosecond(self: *Self) u32 {
+        return self.frac;
+    }
+
+    /// Makes a new `NaiveTime` with the hour number changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `hour` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// assert_eq!(dt.with_hour(7), Some(NaiveTime::from_hms_nano_opt(7, 56, 4, 12_345_678).unwrap()));
+    /// assert_eq!(dt.with_hour(24), None);
+    /// ```
+    
+    fn with_hour(self: *Self, _hour: u32) ?NaiveTime {
+        if _hour >= 24 {
+            return null;
+        }
+        const _secs = _hour * 3600 + self.secs % 3600;
+        Some(NaiveTime { _secs, ..*self })
+    }
+
+    /// Makes a new `NaiveTime` with the minute number changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `minute` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// assert_eq!(
+    ///     dt.with_minute(45),
+    ///     Some(NaiveTime::from_hms_nano_opt(23, 45, 4, 12_345_678).unwrap())
+    /// );
+    /// assert_eq!(dt.with_minute(60), None);
+    /// ```
+    #[inline]
+    fn with_minute(&self, min: u32) -> Option<NaiveTime> {
+        if min >= 60 {
+            return None;
+        }
+        let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
+        Some(NaiveTime { secs, ..*self })
+    }
+
+    /// Makes a new `NaiveTime` with the second number changed.
+    ///
+    /// As with the [`second`](#method.second) method,
+    /// the input range is restricted to 0 through 59.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `second` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// assert_eq!(
+    ///     dt.with_second(17),
+    ///     Some(NaiveTime::from_hms_nano_opt(23, 56, 17, 12_345_678).unwrap())
+    /// );
+    /// assert_eq!(dt.with_second(60), None);
+    /// ```
+    #[inline]
+    fn with_second(&self, sec: u32) -> Option<NaiveTime> {
+        if sec >= 60 {
+            return None;
+        }
+        let secs = self.secs / 60 * 60 + sec;
+        Some(NaiveTime { secs, ..*self })
+    }
+
+    /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
+    ///
+    /// As with the [`nanosecond`](#method.nanosecond) method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// assert_eq!(
+    ///     dt.with_nanosecond(333_333_333),
+    ///     Some(NaiveTime::from_hms_nano_opt(23, 56, 4, 333_333_333).unwrap())
+    /// );
+    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// ```
+    ///
+    /// Leap seconds can theoretically follow *any* whole second.
+    /// The following would be a proper leap second at the time zone offset of UTC-00:03:57
+    /// (there are several historical examples comparable to this "non-sense" offset),
+    /// and therefore is allowed.
+    ///
+    /// ```
+    /// # use chrono::{NaiveTime, Timelike};
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// let strange_leap_second = dt.with_nanosecond(1_333_333_333).unwrap();
+    /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
+    /// ```
+    #[inline]
+    fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
+        if nano >= 2_000_000_000 {
+            return None;
+        }
+        Some(NaiveTime { frac: nano, ..*self })
+    }
+
+    /// Returns the number of non-leap seconds past the last midnight.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms_opt(1, 2, 3).unwrap().num_seconds_from_midnight(), 3723);
+    /// assert_eq!(
+    ///     NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().num_seconds_from_midnight(),
+    ///     86164
+    /// );
+    /// assert_eq!(
+    ///     NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().num_seconds_from_midnight(),
+    ///     86399
+    /// );
+    /// ```
+    #[inline]
+    fn num_seconds_from_midnight(&self) -> u32 {
+        self.secs // do not repeat the calculation!
+    }
+
+
 };
 
 // impl NaiveTime {
@@ -789,240 +1033,7 @@ pub const NaiveTime = struct {
 // }
 
 // impl Timelike for NaiveTime {
-//     /// Returns the hour number from 0 to 23.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().hour(), 0);
-//     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().hour(), 23);
-//     /// ```
-//     #[inline]
-//     fn hour(&self) -> u32 {
-//         self.hms().0
-//     }
 
-//     /// Returns the minute number from 0 to 59.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().minute(), 0);
-//     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().minute(), 56);
-//     /// ```
-//     #[inline]
-//     fn minute(&self) -> u32 {
-//         self.hms().1
-//     }
-
-//     /// Returns the second number from 0 to 59.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().second(), 0);
-//     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().second(), 4);
-//     /// ```
-//     ///
-//     /// This method never returns 60 even when it is a leap second.
-//     /// ([Why?](#leap-second-handling))
-//     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
-//     ///
-//     /// ```
-//     /// # #[cfg(feature = "alloc")] {
-//     /// # use chrono::{NaiveTime, Timelike};
-//     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
-//     /// assert_eq!(leap.second(), 59);
-//     /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
-//     /// # }
-//     /// ```
-//     #[inline]
-//     fn second(&self) -> u32 {
-//         self.hms().2
-//     }
-
-//     /// Returns the number of nanoseconds since the whole non-leap second.
-//     /// The range from 1,000,000,000 to 1,999,999,999 represents
-//     /// the [leap second](#leap-second-handling).
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().nanosecond(), 0);
-//     /// assert_eq!(
-//     ///     NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().nanosecond(),
-//     ///     12_345_678
-//     /// );
-//     /// ```
-//     ///
-//     /// Leap seconds may have seemingly out-of-range return values.
-//     /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
-//     /// use the proper [formatting method](#method.format) to get a human-readable representation.
-//     ///
-//     /// ```
-//     /// # #[cfg(feature = "alloc")] {
-//     /// # use chrono::{NaiveTime, Timelike};
-//     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
-//     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
-//     /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
-//     /// # }
-//     /// ```
-//     #[inline]
-//     fn nanosecond(&self) -> u32 {
-//         self.frac
-//     }
-
-//     /// Makes a new `NaiveTime` with the hour number changed.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if the value for `hour` is invalid.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-//     /// assert_eq!(dt.with_hour(7), Some(NaiveTime::from_hms_nano_opt(7, 56, 4, 12_345_678).unwrap()));
-//     /// assert_eq!(dt.with_hour(24), None);
-//     /// ```
-//     #[inline]
-//     fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
-//         if hour >= 24 {
-//             return None;
-//         }
-//         let secs = hour * 3600 + self.secs % 3600;
-//         Some(NaiveTime { secs, ..*self })
-//     }
-
-//     /// Makes a new `NaiveTime` with the minute number changed.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if the value for `minute` is invalid.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-//     /// assert_eq!(
-//     ///     dt.with_minute(45),
-//     ///     Some(NaiveTime::from_hms_nano_opt(23, 45, 4, 12_345_678).unwrap())
-//     /// );
-//     /// assert_eq!(dt.with_minute(60), None);
-//     /// ```
-//     #[inline]
-//     fn with_minute(&self, min: u32) -> Option<NaiveTime> {
-//         if min >= 60 {
-//             return None;
-//         }
-//         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-//         Some(NaiveTime { secs, ..*self })
-//     }
-
-//     /// Makes a new `NaiveTime` with the second number changed.
-//     ///
-//     /// As with the [`second`](#method.second) method,
-//     /// the input range is restricted to 0 through 59.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if the value for `second` is invalid.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-//     /// assert_eq!(
-//     ///     dt.with_second(17),
-//     ///     Some(NaiveTime::from_hms_nano_opt(23, 56, 17, 12_345_678).unwrap())
-//     /// );
-//     /// assert_eq!(dt.with_second(60), None);
-//     /// ```
-//     #[inline]
-//     fn with_second(&self, sec: u32) -> Option<NaiveTime> {
-//         if sec >= 60 {
-//             return None;
-//         }
-//         let secs = self.secs / 60 * 60 + sec;
-//         Some(NaiveTime { secs, ..*self })
-//     }
-
-//     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
-//     ///
-//     /// As with the [`nanosecond`](#method.nanosecond) method,
-//     /// the input range can exceed 1,000,000,000 for leap seconds.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if `nanosecond >= 2,000,000,000`.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-//     /// assert_eq!(
-//     ///     dt.with_nanosecond(333_333_333),
-//     ///     Some(NaiveTime::from_hms_nano_opt(23, 56, 4, 333_333_333).unwrap())
-//     /// );
-//     /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
-//     /// ```
-//     ///
-//     /// Leap seconds can theoretically follow *any* whole second.
-//     /// The following would be a proper leap second at the time zone offset of UTC-00:03:57
-//     /// (there are several historical examples comparable to this "non-sense" offset),
-//     /// and therefore is allowed.
-//     ///
-//     /// ```
-//     /// # use chrono::{NaiveTime, Timelike};
-//     /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-//     /// let strange_leap_second = dt.with_nanosecond(1_333_333_333).unwrap();
-//     /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
-//     /// ```
-//     #[inline]
-//     fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
-//         if nano >= 2_000_000_000 {
-//             return None;
-//         }
-//         Some(NaiveTime { frac: nano, ..*self })
-//     }
-
-//     /// Returns the number of non-leap seconds past the last midnight.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveTime, Timelike};
-//     ///
-//     /// assert_eq!(NaiveTime::from_hms_opt(1, 2, 3).unwrap().num_seconds_from_midnight(), 3723);
-//     /// assert_eq!(
-//     ///     NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().num_seconds_from_midnight(),
-//     ///     86164
-//     /// );
-//     /// assert_eq!(
-//     ///     NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().num_seconds_from_midnight(),
-//     ///     86399
-//     /// );
-//     /// ```
-//     #[inline]
-//     fn num_seconds_from_midnight(&self) -> u32 {
-//         self.secs // do not repeat the calculation!
-//     }
 // }
 
 // /// Add `TimeDelta` to `NaiveTime`.
@@ -1585,14 +1596,14 @@ test "test_time_from_hms_micro" {
 
 
 test "test_time_hms" {
-    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).unwrap().hour(), 3);
+    try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.hour(), 3);
     try testing.expectEqual(
-        NaiveTime.from_hms_opt(3, 5, 7).unwrap().with_hour(0),
+        NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(0),
         NaiveTime.from_hms_opt(0, 5, 7).?
     );
     try testing.expectEqual(
         NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(23),
-        Some(NaiveTime.from_hms_opt(23, 5, 7).?)
+        NaiveTime.from_hms_opt(23, 5, 7).?
     );
     try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(24), null);
     try testing.expectEqual(NaiveTime.from_hms_opt(3, 5, 7).?.with_hour(std.math.maxInt(u32)), null);

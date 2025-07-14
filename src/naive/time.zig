@@ -495,7 +495,7 @@ pub const NaiveTime = struct {
 
 
 
-        /// Returns the hour number from 0 to 23.
+    /// Returns the hour number from 0 to 23.
     ///
     /// # Example
     ///
@@ -507,7 +507,7 @@ pub const NaiveTime = struct {
     /// ```
 
     fn hour(self: *Self) u32 {
-        return self.hms().0;
+        return self.hms()[0];
     }
 
     /// Returns the minute number from 0 to 59.
@@ -520,8 +520,8 @@ pub const NaiveTime = struct {
     /// assert_eq!(NaiveTime::from_hms_opt(0, 0, 0).unwrap().minute(), 0);
     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().minute(), 56);
     /// ```
-    fn inline minute(self: Self) u32 {
-        return self.hms().1;
+    fn minute(self: Self) u32 {
+        return self.hms()[1];
     }
 
     /// Returns the second number from 0 to 59.
@@ -548,8 +548,8 @@ pub const NaiveTime = struct {
     /// # }
     /// ```
     
-    fn inline second(self: *Self) u32 {
-        return self.hms().2;
+    fn second(self: *Self) u32 {
+        return self.hms()[2];
     }
 
     /// Returns the number of nanoseconds since the whole non-leap second.
@@ -602,11 +602,11 @@ pub const NaiveTime = struct {
     /// ```
     
     fn with_hour(self: *Self, _hour: u32) ?NaiveTime {
-        if _hour >= 24 {
+        if (_hour >= 24) {
             return null;
         }
         const _secs = _hour * 3600 + self.secs % 3600;
-        Some(NaiveTime { _secs, ..*self })
+        return NaiveTime { .secs = _secs, .frac = self.frac };
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
@@ -627,13 +627,13 @@ pub const NaiveTime = struct {
     /// );
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
-    #[inline]
-    fn with_minute(&self, min: u32) -> Option<NaiveTime> {
-        if min >= 60 {
-            return None;
+
+    fn with_minute(self: *Self, min: u32) NaiveTime {
+        if (min >= 60) {
+            return null;
         }
-        let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-        Some(NaiveTime { secs, ..*self })
+        const _secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
+        return NaiveTime { .secs = _secs, .frac = self.frac };
     }
 
     /// Makes a new `NaiveTime` with the second number changed.
@@ -657,13 +657,12 @@ pub const NaiveTime = struct {
     /// );
     /// assert_eq!(dt.with_second(60), None);
     /// ```
-    #[inline]
-    fn with_second(&self, sec: u32) -> Option<NaiveTime> {
-        if sec >= 60 {
-            return None;
+    fn with_second(self: *Self, sec: u32) NaiveTime {
+        if (sec >= 60) {
+            return null;
         }
-        let secs = self.secs / 60 * 60 + sec;
-        Some(NaiveTime { secs, ..*self })
+        const _secs = self.secs / 60 * 60 + sec;
+        return NaiveTime { .secs = _secs, .frac = self.frac };
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
@@ -699,12 +698,11 @@ pub const NaiveTime = struct {
     /// let strange_leap_second = dt.with_nanosecond(1_333_333_333).unwrap();
     /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
     /// ```
-    #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
-        if nano >= 2_000_000_000 {
-            return None;
+    fn with_nanosecond(self: *Self, nano: u32) NaiveTime {
+        if (nano >= 2_000_000_000) {
+            return null;
         }
-        Some(NaiveTime { frac: nano, ..*self })
+        return NaiveTime { .frac = nano, .secs = self.secs };
     }
 
     /// Returns the number of non-leap seconds past the last midnight.
@@ -724,9 +722,8 @@ pub const NaiveTime = struct {
     ///     86399
     /// );
     /// ```
-    #[inline]
-    fn num_seconds_from_midnight(&self) -> u32 {
-        self.secs // do not repeat the calculation!
+    fn num_seconds_from_midnight(self: *Self) u32 {
+        return self.secs; // do not repeat the calculation!
     }
 
 

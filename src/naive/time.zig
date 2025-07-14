@@ -274,7 +274,7 @@ pub const NaiveTime = struct {
         sec: u32,
         milli: u32,
     ) ?NaiveTime {
-        const nano = std.math.mul(u32, milli, 1_000_000) catch unreachable;
+        const nano = std.math.mul(u32, milli, 1_000_000) catch return null;
         return NaiveTime.from_hms_nano_opt(_hour, min, sec, nano);
     }
 
@@ -308,7 +308,7 @@ pub const NaiveTime = struct {
         sec: u32,
         micro: u32,
     ) ?NaiveTime {
-        const nano = std.math.mul(u32, micro, 1_000) catch unreachable;
+        const nano = std.math.mul(u32, micro, 1_000) catch return null;
         return NaiveTime.from_hms_nano_opt(_hour, min, sec, nano);
     }
 

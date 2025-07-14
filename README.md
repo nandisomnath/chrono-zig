@@ -29,6 +29,7 @@ Not available for now
 * Date types are limited to about +/- 262,000 years from the common epoch.
 * Time types are limited to nanosecond accuracy.
 * Leap seconds can be represented, but Chrono does not fully support them.
+* No `deprecated` functions are no longer maintained.
 
 ## Module features
 

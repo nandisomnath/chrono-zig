@@ -3,41 +3,39 @@
 
 //! ISO 8601 date and time without timezone.
 
-#[cfg(feature = "alloc")]
-use core::borrow::Borrow;
-use core::fmt::Write;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::time::Duration;
-use core::{fmt, str};
+// #[cfg(feature = "alloc")]
+// use core::borrow::Borrow;
+// use core::fmt::Write;
+// use core::ops::{Add, AddAssign, Sub, SubAssign};
+// use core::time::Duration;
+// use core::{fmt, str};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
-use rkyv::{Archive, Deserialize, Serialize};
+// #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+// use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(feature = "alloc")]
-use crate::format::DelayedFormat;
-use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::format::{ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder};
-use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
-use crate::offset::Utc;
-use crate::time_delta::NANOS_PER_SEC;
-use crate::{
-    DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone, Timelike,
-    Weekday, expect, try_opt,
-};
+// #[cfg(feature = "alloc")]
+// use crate::format::DelayedFormat;
+// use crate::format::{Fixed, Item, Numeric, Pad};
+// use crate::format::{ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder};
+// use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
+// use crate::offset::Utc;
+// use crate::time_delta::NANOS_PER_SEC;
+// use crate::{
+//     DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone, Timelike,
+//     Weekday, expect, try_opt,
+// };
 
-/// Tools to help serializing/deserializing `NaiveDateTime`s
-#[cfg(feature = "serde")]
-pub(crate) mod serde;
+// /// Tools to help serializing/deserializing `NaiveDateTime`s
+// #[cfg(feature = "serde")]
+// pub(crate) mod serde;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
-/// The minimum possible `NaiveDateTime`.
-#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
-pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime::MIN;
-/// The maximum possible `NaiveDateTime`.
-#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MAX instead")]
-pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
+const NaiveDate = @import("date.zig").NaiveDate;
+const NaiveTime = @import("time.zig").NaiveTime;
+
+
 
 /// ISO 8601 combined date and time without timezone.
 ///
@@ -64,21 +62,13 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// assert_eq!(dt.weekday(), Weekday::Fri);
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
 /// ```
-#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
-    derive(Archive, Deserialize, Serialize),
-    archive(compare(PartialEq, PartialOrd)),
-    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
-)]
-#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
-#[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
-pub struct NaiveDateTime {
-    date: NaiveDate,
-    time: NaiveTime,
-}
+pub const NaiveDateTime = struct {
+    _date: NaiveDate,
+    _time: NaiveTime,
 
-impl NaiveDateTime {
+    const Self = @This();
+
+
     /// Makes a new `NaiveDateTime` from date and time components.
     /// Equivalent to [`date.and_time(time)`](./struct.NaiveDate.html#method.and_time)
     /// and many other helper constructors on `NaiveDate`.
@@ -95,105 +85,45 @@ impl NaiveDateTime {
     /// assert_eq!(dt.date(), d);
     /// assert_eq!(dt.time(), t);
     /// ```
-    #[inline]
-    pub const fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime { date, time }
+    pub fn new(date: NaiveDate, time: NaiveTime) NaiveDateTime {
+        return NaiveDateTime { .date = date, .time = time };
     }
 
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of non-leap seconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
+
+    /// Retrieves a date component.
     ///
-    /// For a non-naive version of this function see [`TimeZone::timestamp`].
+    /// # Example
     ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    /// ```
+    /// use chrono::NaiveDate;
     ///
-    /// # Panics
-    ///
-    /// Panics if the number of seconds would be out of range for a `NaiveDateTime` (more than
-    /// ca. 262,000 years away from common era), and panics on an invalid nanosecond (2 seconds or
-    /// more).
-    #[deprecated(since = "0.4.23", note = "use `DateTime::from_timestamp` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
-        let datetime =
-            expect(DateTime::from_timestamp(secs, nsecs), "invalid or out-of-range datetime");
-        datetime.naive_utc()
+    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
+    /// assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2016, 7, 8).unwrap());
+    /// ```
+    pub  fn date(self: *Self) NaiveDate {
+        return self.date;
     }
 
-    /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
+
+    /// Retrieves a time component.
     ///
-    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    /// # Example
     ///
-    /// # Errors
+    /// ```
+    /// use chrono::{NaiveDate, NaiveTime};
     ///
-    /// Returns `None` if the number of milliseconds would be out of range for a `NaiveDateTime`
-    /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_millis` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        Some(try_opt!(DateTime::from_timestamp_millis(millis)).naive_utc())
+    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
+    /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
+    /// ```
+    pub fn time(self: *Self) NaiveTime {
+        return self.time;
     }
 
-    /// Creates a new [NaiveDateTime] from microseconds since the UNIX epoch.
-    ///
-    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
-    /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_micros` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
-        let secs = micros.div_euclid(1_000_000);
-        let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
-        Some(try_opt!(DateTime::<Utc>::from_timestamp(secs, nsecs)).naive_utc())
-    }
+};
 
-    /// Creates a new [NaiveDateTime] from nanoseconds since the UNIX epoch.
-    ///
-    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the number of nanoseconds would be out of range for a `NaiveDateTime`
-    /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_nanos` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
-        let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
-        let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
-        Some(try_opt!(DateTime::from_timestamp(secs, nsecs)).naive_utc())
-    }
+// impl NaiveDateTime {
 
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of non-leap seconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the number of seconds would be out of range for a `NaiveDateTime` (more
-    /// than ca. 262,000 years away from common era), and panics on an invalid nanosecond
-    /// (2 seconds or more).
-    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        Some(try_opt!(DateTime::from_timestamp(secs, nsecs)).naive_utc())
-    }
+
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
     /// See the [`format::strftime` module](crate::format::strftime)
@@ -316,138 +246,12 @@ impl NaiveDateTime {
         parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
     }
 
-    /// Retrieves a date component.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
-    /// assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2016, 7, 8).unwrap());
-    /// ```
-    #[inline]
-    pub const fn date(&self) -> NaiveDate {
-        self.date
-    }
 
-    /// Retrieves a time component.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveTime};
-    ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
-    /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
-    /// ```
-    #[inline]
-    pub const fn time(&self) -> NaiveTime {
-        self.time
-    }
 
-    /// Returns the number of non-leap seconds since the midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp(&self) -> i64 {
-        self.and_utc().timestamp()
-    }
 
-    /// Returns the number of non-leap *milliseconds* since midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_millis()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_millis(&self) -> i64 {
-        self.and_utc().timestamp_millis()
-    }
 
-    /// Returns the number of non-leap *microseconds* since midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_micros()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_micros(&self) -> i64 {
-        self.and_utc().timestamp_micros()
-    }
 
-    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    ///
-    /// # Panics
-    ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
-    /// an out of range `NaiveDateTime`.
-    ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
-    /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.31", note = "use `.and_utc().timestamp_nanos_opt()` instead")]
-    #[inline]
-    #[must_use]
-    #[allow(deprecated)]
-    pub const fn timestamp_nanos(&self) -> i64 {
-        self.and_utc().timestamp_nanos()
-    }
 
-    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    ///
-    /// # Errors
-    ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
-    /// `None` on an out of range `NaiveDateTime`.
-    ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
-    /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_nanos_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
-        self.and_utc().timestamp_nanos_opt()
-    }
-
-    /// Returns the number of milliseconds since the last whole non-leap second.
-    ///
-    /// The return value ranges from 0 to 999,
-    /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_subsec_millis()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_subsec_millis(&self) -> u32 {
-        self.and_utc().timestamp_subsec_millis()
-    }
-
-    /// Returns the number of microseconds since the last whole non-leap second.
-    ///
-    /// The return value ranges from 0 to 999,999,
-    /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999,999.
-    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_subsec_micros()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_subsec_micros(&self) -> u32 {
-        self.and_utc().timestamp_subsec_micros()
-    }
-
-    /// Returns the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// The return value ranges from 0 to 999,999,999,
-    /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999,999,999.
-    #[deprecated(since = "0.4.36", note = "use `.and_utc().timestamp_subsec_nanos()` instead")]
-    pub const fn timestamp_subsec_nanos(&self) -> u32 {
-        self.and_utc().timestamp_subsec_nanos()
-    }
 
     /// Adds given `TimeDelta` to the current date and time.
     ///
@@ -944,13 +748,6 @@ impl NaiveDateTime {
     /// The maximum possible `NaiveDateTime`.
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
 
-    /// The datetime of the Unix Epoch, 1970-01-01 00:00:00.
-    ///
-    /// Note that while this may look like the UNIX epoch, it is missing the
-    /// time zone. The actual UNIX epoch cannot be expressed by this type,
-    /// however it is available as [`DateTime::UNIX_EPOCH`].
-    #[deprecated(since = "0.4.41", note = "use `DateTime::UNIX_EPOCH` instead")]
-    pub const UNIX_EPOCH: Self = DateTime::UNIX_EPOCH.naive_utc();
 }
 
 impl From<NaiveDate> for NaiveDateTime {

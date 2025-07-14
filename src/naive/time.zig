@@ -240,8 +240,8 @@ pub const NaiveTime = struct {
     /// assert!(from_hms_opt(23, 60, 0).is_none());
     /// assert!(from_hms_opt(23, 59, 60).is_none());
     /// ```
-    pub inline fn from_hms_opt(hour: u32, min: u32, sec: u32) ?NaiveTime {
-        return NaiveTime.from_hms_nano_opt(hour, min, sec, 0);
+    pub inline fn from_hms_opt(_hour: u32, min: u32, sec: u32) ?NaiveTime {
+        return NaiveTime.from_hms_nano_opt(_hour, min, sec, 0);
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
@@ -269,13 +269,13 @@ pub const NaiveTime = struct {
     /// assert!(from_hmsm_opt(23, 59, 59, 2_000).is_none());
     /// ```
     pub inline fn from_hms_milli_opt(
-        hour: u32,
+        _hour: u32,
         min: u32,
         sec: u32,
         milli: u32,
     ) NaiveTime {
         const nano = try std.math.mul(u32, milli, 1_000_000);
-        return NaiveTime.from_hms_nano_opt(hour, min, sec, nano);
+        return NaiveTime.from_hms_nano_opt(_hour, min, sec, nano);
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -303,13 +303,13 @@ pub const NaiveTime = struct {
     /// assert!(from_hmsu_opt(23, 59, 59, 2_000_000).is_none());
     /// ```
     pub inline fn from_hms_micro_opt(
-        hour: u32,
+        _hour: u32,
         min: u32,
         sec: u32,
         micro: u32,
     ) ?NaiveTime {
         const nano = std.math.mul(u32, micro, 1_000) catch unreachable;
-        return NaiveTime.from_hms_nano_opt(hour, min, sec, nano);
+        return NaiveTime.from_hms_nano_opt(_hour, min, sec, nano);
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
@@ -336,9 +336,9 @@ pub const NaiveTime = struct {
     /// assert!(from_hmsn_opt(23, 59, 60, 0).is_none());
     /// assert!(from_hmsn_opt(23, 59, 59, 2_000_000_000).is_none());
     /// ```
-    pub inline fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) ?NaiveTime {
+    pub inline fn from_hms_nano_opt(_hour: u32, min: u32, sec: u32, nano: u32) ?NaiveTime {
         if (
-            (hour >= 24) or 
+            (_hour >= 24) or 
             (min >= 60) or 
             (sec >= 60) or 
             ((nano >= 1_000_000_000) and (sec != 59)) or 
@@ -346,7 +346,7 @@ pub const NaiveTime = struct {
         ) {
             return null;
         }
-        const secs = hour * 3600 + min * 60 + sec;
+        const secs = _hour * 3600 + min * 60 + sec;
         return NaiveTime{ .secs = secs, .frac = nano };
         // return NaiveTime { secs, frac: nano };
     }
@@ -479,20 +479,6 @@ pub const NaiveTime = struct {
         const time, const _rhs = self.overflowing_add_signed(rhs.neg());
         return .{ time, -_rhs }; // safe to negate, rhs is within +/- (2^63 / 1000)
     }
-
-    /// Returns the number of non-leap seconds past the last midnight.
-    // This duplicates `Timelike::num_seconds_from_midnight()`, because trait methods can't be const
-    // yet.
-    pub inline fn num_seconds_from_midnight(self: *Self) u32 {
-        return self.secs;
-    }
-
-    /// Returns the number of nanoseconds since the whole non-leap second.
-    // This duplicates `Timelike::nanosecond()`, because trait methods can't be const yet.
-    pub inline fn nanosecond(self: *Self) u32 {
-        return self.frac;
-    }
-
 
 
     /// Returns the hour number from 0 to 23.

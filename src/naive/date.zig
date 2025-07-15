@@ -52,6 +52,7 @@ const Weekday = weekday.Weekday;
 const YearFlags = internals.YearFlags;
 const Mdf = internals.Mdf;
 const NaiveDateTime = @import("datetime.zig").NaiveDateTime;
+const TimeDelta = @import("../time_delta.zig").TimeDelta;
 
 const i32_max = std.math.maxInt(i32);
 const i32_min = std.math.minInt(i32);
@@ -819,6 +820,92 @@ pub const NaiveDate = struct {
 
     }
 
+    /// Makes a new `NaiveDate` for the next calendar date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` when `self` is the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2015, 6, 3).unwrap().succ_opt(),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 6, 4).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::MAX.succ_opt(), None);
+    /// ```
+
+    pub fn succ_opt(self: *Self) ?NaiveDate {
+        const new_ol = (self.yof() & OL_MASK) + (1 << 4);
+        switch (new_ol <= MAX_OL) {
+            true => return NaiveDate.from_yof(self.yof() & !OL_MASK | new_ol),
+            false => return NaiveDate.from_yo_opt(self.year() + 1, 1),
+        }
+    }
+
+
+    /// Makes a new `NaiveDate` for the previous calendar date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` when `self` is the first representable date.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2015, 6, 3).unwrap().pred_opt(),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 6, 2).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::MIN.pred_opt(), None);
+    /// ```
+    pub fn pred_opt(self: *Self) ?NaiveDate {
+        const new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
+        switch (new_shifted_ordinal > 0) {
+            true => return NaiveDate.from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal),
+            false => return NaiveDate.from_ymd_opt(self.year() - 1, 12, 31),
+        }
+    }
+
+
+
+    /// Adds the number of whole days in the given `TimeDelta` to the current date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, TimeDelta};
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
+    /// assert_eq!(
+    ///     d.checked_add_signed(TimeDelta::try_days(40).unwrap()),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap())
+    /// );
+    /// assert_eq!(
+    ///     d.checked_add_signed(TimeDelta::try_days(-40).unwrap()),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap())
+    /// );
+    /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
+    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::try_days(1).unwrap()), None);
+    /// ```
+    pub fn checked_add_signed(self: *Self, rhs: TimeDelta) ?NaiveDate {
+        const _days = rhs.num_days();
+        if (_days < @as(i64, std.math.minInt(i32)) or _days > @as(i64, std.math.maxInt(i32))) {
+            return null;
+        }
+        return self.add_days(_days);
+    }
+
 
 };
 
@@ -829,95 +916,6 @@ pub const NaiveDate = struct {
 
 
 
-
-
-//     /// Makes a new `NaiveDate` for the next calendar date.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` when `self` is the last representable date.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// assert_eq!(
-//     ///     NaiveDate::from_ymd_opt(2015, 6, 3).unwrap().succ_opt(),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 6, 4).unwrap())
-//     /// );
-//     /// assert_eq!(NaiveDate::MAX.succ_opt(), None);
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn succ_opt(&self) -> Option<NaiveDate> {
-//         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
-//         match new_ol <= MAX_OL {
-//             true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
-//             false => NaiveDate::from_yo_opt(self.year() + 1, 1),
-//         }
-//     }
-
-
-//     /// Makes a new `NaiveDate` for the previous calendar date.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` when `self` is the first representable date.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// assert_eq!(
-//     ///     NaiveDate::from_ymd_opt(2015, 6, 3).unwrap().pred_opt(),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 6, 2).unwrap())
-//     /// );
-//     /// assert_eq!(NaiveDate::MIN.pred_opt(), None);
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn pred_opt(&self) -> Option<NaiveDate> {
-//         let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
-//         match new_shifted_ordinal > 0 {
-//             true => Some(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
-//             false => NaiveDate::from_ymd_opt(self.year() - 1, 12, 31),
-//         }
-//     }
-
-//     /// Adds the number of whole days in the given `TimeDelta` to the current date.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if the resulting date would be out of range.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveDate, TimeDelta};
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-//     /// assert_eq!(
-//     ///     d.checked_add_signed(TimeDelta::try_days(40).unwrap()),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap())
-//     /// );
-//     /// assert_eq!(
-//     ///     d.checked_add_signed(TimeDelta::try_days(-40).unwrap()),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap())
-//     /// );
-//     /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
-//     /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
-//     /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::try_days(1).unwrap()), None);
-//     /// ```
-//     #[must_use]
-//     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-//         let days = rhs.num_days();
-//         if days < i32::MIN as i64 || days > i32::MAX as i64 {
-//             return None;
-//         }
-//         self.add_days(days as i32)
-//     }
 
 //     /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
 //     ///

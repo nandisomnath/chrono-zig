@@ -19,7 +19,7 @@ full timezone support.
 
 ## Documentation
 
-Not available for now
+`Experimental`,  Documentation is not fully prepared.
 
 <!-- See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference. -->
 

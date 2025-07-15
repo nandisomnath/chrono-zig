@@ -907,48 +907,46 @@ pub const NaiveDate = struct {
     }
 
 
+        /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, TimeDelta};
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
+    /// assert_eq!(
+    ///     d.checked_sub_signed(TimeDelta::try_days(40).unwrap()),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap())
+    /// );
+    /// assert_eq!(
+    ///     d.checked_sub_signed(TimeDelta::try_days(-40).unwrap()),
+    ///     Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap())
+    /// );
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
+    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::try_days(1).unwrap()), None);
+    /// ```
+    pub fn checked_sub_signed(self: *Self, rhs: TimeDelta) ?NaiveDate {
+        const _days = -rhs.num_days();
+        
+        
+        if (_days < @as(i64, std.math.minInt(i32)) or _days > @as(i64, std.math.maxInt(i32))) {
+            return null;
+        }
+        return self.add_days(@intCast(_days));
+    }
+
+
 };
 
 
 
 // impl NaiveDate {
-
-
-
-
-
-//     /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` if the resulting date would be out of range.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::{NaiveDate, TimeDelta};
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-//     /// assert_eq!(
-//     ///     d.checked_sub_signed(TimeDelta::try_days(40).unwrap()),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap())
-//     /// );
-//     /// assert_eq!(
-//     ///     d.checked_sub_signed(TimeDelta::try_days(-40).unwrap()),
-//     ///     Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap())
-//     /// );
-//     /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
-//     /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
-//     /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::try_days(1).unwrap()), None);
-//     /// ```
-//     #[must_use]
-//     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-//         let days = -rhs.num_days();
-//         if days < i32::MIN as i64 || days > i32::MAX as i64 {
-//             return None;
-//         }
-//         self.add_days(days as i32)
-//     }
 
 //     /// Subtracts another `NaiveDate` from the current date.
 //     /// Returns a `TimeDelta` of integral numbers.

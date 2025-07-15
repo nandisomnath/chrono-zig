@@ -51,6 +51,7 @@ const IsoWeek = isoweek.IsoWeek;
 const Weekday = weekday.Weekday;
 const YearFlags = internals.YearFlags;
 const Mdf = internals.Mdf;
+const NaiveDateTime = @import("datetime.zig").NaiveDateTime;
 
 const i32_max = std.math.maxInt(i32);
 const i32_min = std.math.minInt(i32);
@@ -654,23 +655,170 @@ pub const NaiveDate = struct {
     }
 
 
-    // /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
-    // ///
-    // /// # Example
-    // ///
-    // /// ```
-    // /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-    // ///
-    // /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    // /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
-    // ///
-    // /// let dt: NaiveDateTime = d.and_time(t);
-    // /// assert_eq!(dt.date(), d);
-    // /// assert_eq!(dt.time(), t);
-    // /// ```
-    // pub inline fn and_time(self: *Self, time: NaiveTime)  NaiveDateTime {
-    //     return NaiveDateTime.new(*self, time);
-    // }
+    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+    ///
+    /// let dt: NaiveDateTime = d.and_time(t);
+    /// assert_eq!(dt.date(), d);
+    /// assert_eq!(dt.time(), t);
+    /// ```
+    pub fn and_time(self: *Self, time: NaiveTime)  NaiveDateTime {
+        return NaiveDateTime.new(*self, time);
+    }
+
+
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
+    ///
+    /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
+    /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on invalid hour, minute and/or second.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// assert!(d.and_hms_opt(12, 34, 56).is_some());
+    /// assert!(d.and_hms_opt(12, 34, 60).is_none()); // use `and_hms_milli_opt` instead
+    /// assert!(d.and_hms_opt(12, 60, 56).is_none());
+    /// assert!(d.and_hms_opt(24, 34, 56).is_none());
+    /// ```
+    pub fn and_hms_opt(self: *Self, _hour: u32, _min: u32, _sec: u32) ?NaiveDateTime {
+        const _time = NaiveTime.from_hms_opt(_hour, _min, _sec) catch return null;
+        return self.and_time(_time);
+    }
+
+
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
+    ///
+    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// assert!(d.and_hms_milli_opt(12, 34, 56, 789).is_some());
+    /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_some()); // leap second
+    /// assert!(d.and_hms_milli_opt(12, 34, 59, 2_789).is_none());
+    /// assert!(d.and_hms_milli_opt(12, 34, 60, 789).is_none());
+    /// assert!(d.and_hms_milli_opt(12, 60, 56, 789).is_none());
+    /// assert!(d.and_hms_milli_opt(24, 34, 56, 789).is_none());
+    /// ```
+    pub fn and_hms_milli_opt(
+        self: *Self,
+        _hour: u32,
+        _min: u32,
+        _sec: u32,
+        _milli: u32,
+    ) ?NaiveDateTime {
+        const _time = NaiveTime.from_hms_milli_opt(_hour, _min, _sec, _milli) catch return null;
+        return self.and_time(_time);
+    }
+
+
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
+    ///
+    /// The microsecond part is allowed to exceed 1,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// assert!(d.and_hms_micro_opt(12, 34, 56, 789_012).is_some());
+    /// assert!(d.and_hms_micro_opt(12, 34, 59, 1_789_012).is_some()); // leap second
+    /// assert!(d.and_hms_micro_opt(12, 34, 59, 2_789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(12, 34, 60, 789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(12, 60, 56, 789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(24, 34, 56, 789_012).is_none());
+    /// ```
+    pub fn and_hms_micro_opt(
+        self: *Self,
+        _hour: u32,
+        _min: u32,
+        _sec: u32,
+        _micro: u32,
+    ) ?NaiveDateTime {
+        const time = NaiveTime.from_hms_micro_opt(_hour, _min, _sec, _micro) catch return null;
+        return self.and_time(time);
+    }
+
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
+    ///
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+    /// assert!(d.and_hms_nano_opt(12, 34, 56, 789_012_345).is_some());
+    /// assert!(d.and_hms_nano_opt(12, 34, 59, 1_789_012_345).is_some()); // leap second
+    /// assert!(d.and_hms_nano_opt(12, 34, 59, 2_789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(12, 34, 60, 789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(12, 60, 56, 789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(24, 34, 56, 789_012_345).is_none());
+    /// ```
+    pub  fn and_hms_nano_opt(
+        self: *Self,
+        _hour: u32,
+        _min: u32,
+        _sec: u32,
+        _nano: u32,
+    ) ?NaiveDateTime {
+        const _time = NaiveTime.from_hms_nano_opt(_hour, _min, _sec, _nano) catch return null;
+        return self.and_time(_time);
+    }
+
+
+    /// Makes a new `NaiveDate` with the packed month-day-flags changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    fn with_mdf(self: *Self, _mdf: Mdf) ?NaiveDate {
+        std.debug.assert(self.year_flags().value == _mdf.year_flags().value);
+
+
+        if (_mdf.ordinal()) |_ordinal| {
+            return NaiveDate.from_yof(
+                    (self.yof() & !ORDINAL_MASK) |
+                     @as(i32, (_ordinal << 4))
+                    );
+        } else {
+            return null;
+        }
+
+    }
+
 
 };
 
@@ -681,156 +829,6 @@ pub const NaiveDate = struct {
 
 
 
-
-
-//     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
-//     ///
-//     /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
-//     /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` on invalid hour, minute and/or second.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-//     /// assert!(d.and_hms_opt(12, 34, 56).is_some());
-//     /// assert!(d.and_hms_opt(12, 34, 60).is_none()); // use `and_hms_milli_opt` instead
-//     /// assert!(d.and_hms_opt(12, 60, 56).is_none());
-//     /// assert!(d.and_hms_opt(24, 34, 56).is_none());
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
-//         let time = try_opt!(NaiveTime::from_hms_opt(hour, min, sec));
-//         Some(self.and_time(time))
-//     }
-
-
-//     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
-//     ///
-//     /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
-//     /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` on invalid hour, minute, second and/or millisecond.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-//     /// assert!(d.and_hms_milli_opt(12, 34, 56, 789).is_some());
-//     /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_some()); // leap second
-//     /// assert!(d.and_hms_milli_opt(12, 34, 59, 2_789).is_none());
-//     /// assert!(d.and_hms_milli_opt(12, 34, 60, 789).is_none());
-//     /// assert!(d.and_hms_milli_opt(12, 60, 56, 789).is_none());
-//     /// assert!(d.and_hms_milli_opt(24, 34, 56, 789).is_none());
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn and_hms_milli_opt(
-//         &self,
-//         hour: u32,
-//         min: u32,
-//         sec: u32,
-//         milli: u32,
-//     ) -> Option<NaiveDateTime> {
-//         let time = try_opt!(NaiveTime::from_hms_milli_opt(hour, min, sec, milli));
-//         Some(self.and_time(time))
-//     }
-
-
-//     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
-//     ///
-//     /// The microsecond part is allowed to exceed 1,000,000 in order to represent a [leap second](
-//     /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` on invalid hour, minute, second and/or microsecond.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-//     /// assert!(d.and_hms_micro_opt(12, 34, 56, 789_012).is_some());
-//     /// assert!(d.and_hms_micro_opt(12, 34, 59, 1_789_012).is_some()); // leap second
-//     /// assert!(d.and_hms_micro_opt(12, 34, 59, 2_789_012).is_none());
-//     /// assert!(d.and_hms_micro_opt(12, 34, 60, 789_012).is_none());
-//     /// assert!(d.and_hms_micro_opt(12, 60, 56, 789_012).is_none());
-//     /// assert!(d.and_hms_micro_opt(24, 34, 56, 789_012).is_none());
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn and_hms_micro_opt(
-//         &self,
-//         hour: u32,
-//         min: u32,
-//         sec: u32,
-//         micro: u32,
-//     ) -> Option<NaiveDateTime> {
-//         let time = try_opt!(NaiveTime::from_hms_micro_opt(hour, min, sec, micro));
-//         Some(self.and_time(time))
-//     }
-
-
-//     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
-//     ///
-//     /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
-//     /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-//     ///
-//     /// # Errors
-//     ///
-//     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use chrono::NaiveDate;
-//     ///
-//     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-//     /// assert!(d.and_hms_nano_opt(12, 34, 56, 789_012_345).is_some());
-//     /// assert!(d.and_hms_nano_opt(12, 34, 59, 1_789_012_345).is_some()); // leap second
-//     /// assert!(d.and_hms_nano_opt(12, 34, 59, 2_789_012_345).is_none());
-//     /// assert!(d.and_hms_nano_opt(12, 34, 60, 789_012_345).is_none());
-//     /// assert!(d.and_hms_nano_opt(12, 60, 56, 789_012_345).is_none());
-//     /// assert!(d.and_hms_nano_opt(24, 34, 56, 789_012_345).is_none());
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub const fn and_hms_nano_opt(
-//         &self,
-//         hour: u32,
-//         min: u32,
-//         sec: u32,
-//         nano: u32,
-//     ) -> Option<NaiveDateTime> {
-//         let time = try_opt!(NaiveTime::from_hms_nano_opt(hour, min, sec, nano));
-//         Some(self.and_time(time))
-//     }
-
-//     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
-//     ///
-//     /// Returns `None` when the resulting `NaiveDate` would be invalid.
-//     #[inline]
-//     const fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
-//         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
-//         match mdf.ordinal() {
-//             Some(ordinal) => {
-//                 Some(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
-//             }
-//             None => None, // Non-existing date
-//         }
-//     }
 
 
 //     /// Makes a new `NaiveDate` for the next calendar date.

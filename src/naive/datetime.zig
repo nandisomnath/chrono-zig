@@ -360,6 +360,21 @@ pub const NaiveDateTime = struct {
         return NaiveDateTime { ._date = __date , ._time = self._time };
     }
 
+
+    /// Converts a `NaiveDate` to a `NaiveDateTime` of the same date but at midnight.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let nd = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap();
+    /// let ndt = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    /// assert_eq!(ndt, NaiveDateTime::from(nd));
+    fn from(_date: NaiveDate) Self {
+       return _date.and_hms_opt(0, 0, 0).?;
+    }
+
     /// The minimum possible `NaiveDateTime`.
     pub const MIN = NaiveDateTime { ._date = NaiveDate.MIN, ._time = NaiveTime.MIN };
 
@@ -754,21 +769,7 @@ pub const NaiveDateTime = struct {
 
 // }
 
-impl From<NaiveDate> for NaiveDateTime {
-    /// Converts a `NaiveDate` to a `NaiveDateTime` of the same date but at midnight.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
-    ///
-    /// let nd = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap();
-    /// let ndt = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap().and_hms_opt(0, 0, 0).unwrap();
-    /// assert_eq!(ndt, NaiveDateTime::from(nd));
-    fn from(date: NaiveDate) -> Self {
-        date.and_hms_opt(0, 0, 0).unwrap()
-    }
-}
+
 
 impl Datelike for NaiveDateTime {
     /// Returns the year number in the [calendar date](./struct.NaiveDate.html#calendar-date).

@@ -19,7 +19,7 @@ full timezone support.
 
 ## Documentation
 
-`Experimental`,  Documentation is not fully prepared.
+[`Experimental`](https://nandisomnath.github.io/chrono-zig),  Documentation is not fully prepared.
 
 <!-- See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference. -->
 

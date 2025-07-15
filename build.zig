@@ -41,11 +41,7 @@ pub fn build(b: *std.Build) void {
         .root_module = lib_mod,
     });
 
-    _ = b.addModule("chrono", .{
-        .root_source_file = b.path("src/root.zig"),
-        .optimize = optimize,
-        .target = target
-    });
+    _ = b.addModule("chrono", .{ .root_source_file = b.path("src/root.zig"), .optimize = optimize, .target = target });
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -65,4 +61,16 @@ pub fn build(b: *std.Build) void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
+
+
+
+    const install_docs = b.addInstallDirectory(.{ 
+        .source_dir = lib.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "docs"
+    });
+    
+
+    const install_docs_step = b.step("doc", "Generate docs for the the library");
+    install_docs_step.dependOn(&install_docs.step);
 }

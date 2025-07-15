@@ -243,208 +243,8 @@ pub const NaiveDateTime = struct {
         return NaiveDateTime { ._date = __date, ._time = self._time };
     }
 
-};
 
-// impl NaiveDateTime {
-
-
-
-    /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
-    /// See the [`format::strftime` module](crate::format::strftime)
-    /// on the supported escape sequences.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
-    ///
-    /// let parse_from_str = NaiveDateTime::parse_from_str;
-    ///
-    /// assert_eq!(
-    ///     parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S"),
-    ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     parse_from_str("5sep2015pm012345.6789", "%d%b%Y%p%I%M%S%.f"),
-    ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5)
-    ///         .unwrap()
-    ///         .and_hms_micro_opt(13, 23, 45, 678_900)
-    ///         .unwrap())
-    /// );
-    /// ```
-    ///
-    /// Offset is ignored for the purpose of parsing.
-    ///
-    /// ```
-    /// # use chrono::{NaiveDateTime, NaiveDate};
-    /// # let parse_from_str = NaiveDateTime::parse_from_str;
-    /// assert_eq!(
-    ///     parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-    ///     Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap().and_hms_opt(12, 34, 56).unwrap())
-    /// );
-    /// ```
-    ///
-    /// [Leap seconds](./struct.NaiveTime.html#leap-second-handling) are correctly handled by
-    /// treating any time of the form `hh:mm:60` as a leap second.
-    /// (This equally applies to the formatting, so the round trip is possible.)
-    ///
-    /// ```
-    /// # use chrono::{NaiveDateTime, NaiveDate};
-    /// # let parse_from_str = NaiveDateTime::parse_from_str;
-    /// assert_eq!(
-    ///     parse_from_str("2015-07-01 08:59:60.123", "%Y-%m-%d %H:%M:%S%.f"),
-    ///     Ok(NaiveDate::from_ymd_opt(2015, 7, 1)
-    ///         .unwrap()
-    ///         .and_hms_milli_opt(8, 59, 59, 1_123)
-    ///         .unwrap())
-    /// );
-    /// ```
-    ///
-    /// Missing seconds are assumed to be zero,
-    /// but out-of-bound times or insufficient fields are errors otherwise.
-    ///
-    /// ```
-    /// # use chrono::{NaiveDateTime, NaiveDate};
-    /// # let parse_from_str = NaiveDateTime::parse_from_str;
-    /// assert_eq!(
-    ///     parse_from_str("94/9/4 7:15", "%y/%m/%d %H:%M"),
-    ///     Ok(NaiveDate::from_ymd_opt(1994, 9, 4).unwrap().and_hms_opt(7, 15, 0).unwrap())
-    /// );
-    ///
-    /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
-    /// assert!(parse_from_str("94/9/4 12", "%y/%m/%d %H").is_err());
-    /// assert!(parse_from_str("94/9/4 17:60", "%y/%m/%d %H:%M").is_err());
-    /// assert!(parse_from_str("94/9/4 24:00:00", "%y/%m/%d %H:%M:%S").is_err());
-    /// ```
-    ///
-    /// All parsed fields should be consistent to each other, otherwise it's an error.
-    ///
-    /// ```
-    /// # use chrono::NaiveDateTime;
-    /// # let parse_from_str = NaiveDateTime::parse_from_str;
-    /// let fmt = "%Y-%m-%d %H:%M:%S = UNIX timestamp %s";
-    /// assert!(parse_from_str("2001-09-09 01:46:39 = UNIX timestamp 999999999", fmt).is_ok());
-    /// assert!(parse_from_str("1970-01-01 00:00:00 = UNIX timestamp 1", fmt).is_err());
-    /// ```
-    ///
-    /// Years before 1 BCE or after 9999 CE, require an initial sign
-    ///
-    ///```
-    /// # use chrono::NaiveDateTime;
-    /// # let parse_from_str = NaiveDateTime::parse_from_str;
-    /// let fmt = "%Y-%m-%d %H:%M:%S";
-    /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
-    /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
-    /// ```
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
-        let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
-        parsed.to_naive_datetime_with_offset(0) // no offset adjustment
-    }
-
-    /// Parses a string with the specified format string and returns a new `NaiveDateTime`, and a
-    /// slice with the remaining portion of the string.
-    /// See the [`format::strftime` module](crate::format::strftime)
-    /// on the supported escape sequences.
-    ///
-    /// Similar to [`parse_from_str`](#method.parse_from_str).
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// # use chrono::{NaiveDate, NaiveDateTime};
-    /// let (datetime, remainder) = NaiveDateTime::parse_and_remainder(
-    ///     "2015-02-18 23:16:09 trailing text",
-    ///     "%Y-%m-%d %H:%M:%S",
-    /// )
-    /// .unwrap();
-    /// assert_eq!(
-    ///     datetime,
-    ///     NaiveDate::from_ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap()
-    /// );
-    /// assert_eq!(remainder, " trailing text");
-    /// ```
-    pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
-        let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
-        parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
-    }
-
-
-
-
-
-
-
-
-
-
-
-    /// Adds given `FixedOffset` to the current datetime.
-    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
-    ///
-    /// This method is similar to [`checked_add_signed`](#method.checked_add_offset), but preserves
-    /// leap seconds.
-    #[must_use]
-    pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
-        let (time, days) = self.time.overflowing_add_offset(rhs);
-        let date = match days {
-            -1 => try_opt!(self.date.pred_opt()),
-            1 => try_opt!(self.date.succ_opt()),
-            _ => self.date,
-        };
-        Some(NaiveDateTime { date, time })
-    }
-
-    /// Subtracts given `FixedOffset` from the current datetime.
-    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
-    ///
-    /// This method is similar to [`checked_sub_signed`](#method.checked_sub_signed), but preserves
-    /// leap seconds.
-    pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
-        let (time, days) = self.time.overflowing_sub_offset(rhs);
-        let date = match days {
-            -1 => try_opt!(self.date.pred_opt()),
-            1 => try_opt!(self.date.succ_opt()),
-            _ => self.date,
-        };
-        Some(NaiveDateTime { date, time })
-    }
-
-    /// Adds given `FixedOffset` to the current datetime.
-    /// The resulting value may be outside the valid range of [`NaiveDateTime`].
-    ///
-    /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
-    /// should not be exposed to library users.
-    #[must_use]
-    pub(crate) fn overflowing_add_offset(self, rhs: FixedOffset) -> NaiveDateTime {
-        let (time, days) = self.time.overflowing_add_offset(rhs);
-        let date = match days {
-            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
-            1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
-            _ => self.date,
-        };
-        NaiveDateTime { date, time }
-    }
-
-    /// Subtracts given `FixedOffset` from the current datetime.
-    /// The resulting value may be outside the valid range of [`NaiveDateTime`].
-    ///
-    /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
-    /// should not be exposed to library users.
-    #[must_use]
-    #[allow(unused)] // currently only used in `Local` but not on all platforms
-    pub(crate) fn overflowing_sub_offset(self, rhs: FixedOffset) -> NaiveDateTime {
-        let (time, days) = self.time.overflowing_sub_offset(rhs);
-        let date = match days {
-            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
-            1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
-            _ => self.date,
-        };
-        NaiveDateTime { date, time }
-    }
-
-    /// Subtracts given `TimeDelta` from the current date and time.
+        /// Subtracts given `TimeDelta` from the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
     /// the subtraction assumes that **there is no leap second ever**,
@@ -516,13 +316,13 @@ pub const NaiveDateTime = struct {
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::try_days(1).unwrap()),
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
     /// ```
-    #[must_use]
-    pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
-        let (time, remainder) = self.time.overflowing_sub_signed(rhs);
-        let remainder = try_opt!(TimeDelta::try_seconds(remainder));
-        let date = try_opt!(self.date.checked_sub_signed(remainder));
-        Some(NaiveDateTime { date, time })
+    pub fn checked_sub_signed(self: *Self, rhs: TimeDelta) ?NaiveDateTime {
+        const __time, const _remainder = self._time.overflowing_sub_signed(rhs);
+        const __remainder = TimeDelta.try_seconds(_remainder) catch return null;
+        const __date = self._date.checked_sub_signed(__remainder) catch return null;
+        return NaiveDateTime { ._date = __date, ._time = __time };
     }
+
 
     /// Subtracts given `Months` from the current date and time.
     ///
@@ -555,207 +355,404 @@ pub const NaiveDateTime = struct {
     ///     None
     /// );
     /// ```
-    #[must_use]
-    pub const fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(self.date.checked_sub_months(rhs)), time: self.time })
-    }
-
-    /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
-    ///
-    /// Returns `None` if the resulting date would be out of range.
-    #[must_use]
-    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: try_opt!(self.date.checked_add_days(days)), ..self })
-    }
-
-    /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
-    ///
-    /// Returns `None` if the resulting date would be out of range.
-    #[must_use]
-    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: try_opt!(self.date.checked_sub_days(days)), ..self })
-    }
-
-    /// Subtracts another `NaiveDateTime` from the current date and time.
-    /// This does not overflow or underflow at all.
-    ///
-    /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-    /// the subtraction assumes that **there is no leap second ever**,
-    /// except when any of the `NaiveDateTime`s themselves represents a leap second
-    /// in which case the assumption becomes that
-    /// **there are exactly one (or two) leap second(s) ever**.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, TimeDelta};
-    ///
-    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    ///
-    /// let d = from_ymd(2016, 7, 8);
-    /// assert_eq!(
-    ///     d.and_hms_opt(3, 5, 7).unwrap().signed_duration_since(d.and_hms_opt(2, 4, 6).unwrap()),
-    ///     TimeDelta::try_seconds(3600 + 60 + 1).unwrap()
-    /// );
-    ///
-    /// // July 8 is 190th day in the year 2016
-    /// let d0 = from_ymd(2016, 1, 1);
-    /// assert_eq!(
-    ///     d.and_hms_milli_opt(0, 7, 6, 500)
-    ///         .unwrap()
-    ///         .signed_duration_since(d0.and_hms_opt(0, 0, 0).unwrap()),
-    ///     TimeDelta::try_seconds(189 * 86_400 + 7 * 60 + 6).unwrap()
-    ///         + TimeDelta::try_milliseconds(500).unwrap()
-    /// );
-    /// ```
-    ///
-    /// Leap seconds are handled, but the subtraction assumes that
-    /// there were no other leap seconds happened.
-    ///
-    /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
-    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    /// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
-    /// assert_eq!(
-    ///     leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap()),
-    ///     TimeDelta::try_seconds(3600).unwrap() + TimeDelta::try_milliseconds(500).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     from_ymd(2015, 7, 1).and_hms_opt(1, 0, 0).unwrap().signed_duration_since(leap),
-    ///     TimeDelta::try_seconds(3600).unwrap() - TimeDelta::try_milliseconds(500).unwrap()
-    /// );
-    /// ```
-    #[must_use]
-    pub const fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
-        expect(
-            self.date
-                .signed_duration_since(rhs.date)
-                .checked_add(&self.time.signed_duration_since(rhs.time)),
-            "always in range",
-        )
-    }
-
-    /// Formats the combined date and time with the specified formatting items.
-    /// Otherwise it is the same as the ordinary [`format`](#method.format) method.
-    ///
-    /// The `Iterator` of items should be `Clone`able,
-    /// since the resulting `DelayedFormat` value may be formatted multiple times.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::format::strftime::StrftimeItems;
-    /// use chrono::NaiveDate;
-    ///
-    /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S");
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(dt.format_with_items(fmt.clone()).to_string(), "2015-09-05 23:56:04");
-    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
-    /// ```
-    ///
-    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
-    ///
-    /// ```
-    /// # use chrono::NaiveDate;
-    /// # use chrono::format::strftime::StrftimeItems;
-    /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
-    /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
-    /// ```
-    #[cfg(feature = "alloc")]
-    #[inline]
-    #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
-    where
-        I: Iterator<Item = B> + Clone,
-        B: Borrow<Item<'a>>,
-    {
-        DelayedFormat::new(Some(self.date), Some(self.time), items)
-    }
-
-    /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](crate::format::strftime)
-    /// on the supported escape sequences.
-    ///
-    /// This returns a `DelayedFormat`,
-    /// which gets converted to a string only when actual formatting happens.
-    /// You may use the `to_string` method to get a `String`,
-    /// or just feed it into `print!` and other formatting macros.
-    /// (In this way it avoids the redundant memory allocation.)
-    ///
-    /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
-    /// assert_eq!(dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
-    /// ```
-    ///
-    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
-    ///
-    /// ```
-    /// # use chrono::NaiveDate;
-    /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
-    /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
-    /// ```
-    #[cfg(feature = "alloc")]
-    #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
-    }
-
-    /// Converts the `NaiveDateTime` into a timezone-aware `DateTime<Tz>` with the provided
-    /// time zone.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{FixedOffset, NaiveDate};
-    /// let hour = 3600;
-    /// let tz = FixedOffset::east_opt(5 * hour).unwrap();
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5)
-    ///     .unwrap()
-    ///     .and_hms_opt(23, 56, 4)
-    ///     .unwrap()
-    ///     .and_local_timezone(tz)
-    ///     .unwrap();
-    /// assert_eq!(dt.timezone(), tz);
-    /// ```
-    #[must_use]
-    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
-        tz.from_local_datetime(self)
-    }
-
-    /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Utc>`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Utc};
-    /// let dt =
-    ///     NaiveDate::from_ymd_opt(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap().and_utc();
-    /// assert_eq!(dt.timezone(), Utc);
-    /// ```
-    #[must_use]
-    pub const fn and_utc(&self) -> DateTime<Utc> {
-        DateTime::from_naive_utc_and_offset(*self, Utc)
+    pub fn checked_sub_months(self: *Self, rhs: Months) ?NaiveDateTime {
+        const __date = self.date.checked_sub_months(rhs) catch return null;
+        return NaiveDateTime { ._date = __date , ._time = self._time };
     }
 
     /// The minimum possible `NaiveDateTime`.
-    pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
+    pub const MIN = NaiveDateTime { ._date = NaiveDate.MIN, ._time = NaiveTime.MIN };
 
     /// The maximum possible `NaiveDateTime`.
-    pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
+    pub const MAX = NaiveDateTime { ._date = NaiveDate.MAX, ._time = NaiveTime.MAX };
 
-}
+};
+
+// impl NaiveDateTime {
+
+
+
+    // /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
+    // /// See the [`format::strftime` module](crate::format::strftime)
+    // /// on the supported escape sequences.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::{NaiveDate, NaiveDateTime};
+    // ///
+    // /// let parse_from_str = NaiveDateTime::parse_from_str;
+    // ///
+    // /// assert_eq!(
+    // ///     parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S"),
+    // ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap())
+    // /// );
+    // /// assert_eq!(
+    // ///     parse_from_str("5sep2015pm012345.6789", "%d%b%Y%p%I%M%S%.f"),
+    // ///     Ok(NaiveDate::from_ymd_opt(2015, 9, 5)
+    // ///         .unwrap()
+    // ///         .and_hms_micro_opt(13, 23, 45, 678_900)
+    // ///         .unwrap())
+    // /// );
+    // /// ```
+    // ///
+    // /// Offset is ignored for the purpose of parsing.
+    // ///
+    // /// ```
+    // /// # use chrono::{NaiveDateTime, NaiveDate};
+    // /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    // /// assert_eq!(
+    // ///     parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+    // ///     Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap().and_hms_opt(12, 34, 56).unwrap())
+    // /// );
+    // /// ```
+    // ///
+    // /// [Leap seconds](./struct.NaiveTime.html#leap-second-handling) are correctly handled by
+    // /// treating any time of the form `hh:mm:60` as a leap second.
+    // /// (This equally applies to the formatting, so the round trip is possible.)
+    // ///
+    // /// ```
+    // /// # use chrono::{NaiveDateTime, NaiveDate};
+    // /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    // /// assert_eq!(
+    // ///     parse_from_str("2015-07-01 08:59:60.123", "%Y-%m-%d %H:%M:%S%.f"),
+    // ///     Ok(NaiveDate::from_ymd_opt(2015, 7, 1)
+    // ///         .unwrap()
+    // ///         .and_hms_milli_opt(8, 59, 59, 1_123)
+    // ///         .unwrap())
+    // /// );
+    // /// ```
+    // ///
+    // /// Missing seconds are assumed to be zero,
+    // /// but out-of-bound times or insufficient fields are errors otherwise.
+    // ///
+    // /// ```
+    // /// # use chrono::{NaiveDateTime, NaiveDate};
+    // /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    // /// assert_eq!(
+    // ///     parse_from_str("94/9/4 7:15", "%y/%m/%d %H:%M"),
+    // ///     Ok(NaiveDate::from_ymd_opt(1994, 9, 4).unwrap().and_hms_opt(7, 15, 0).unwrap())
+    // /// );
+    // ///
+    // /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
+    // /// assert!(parse_from_str("94/9/4 12", "%y/%m/%d %H").is_err());
+    // /// assert!(parse_from_str("94/9/4 17:60", "%y/%m/%d %H:%M").is_err());
+    // /// assert!(parse_from_str("94/9/4 24:00:00", "%y/%m/%d %H:%M:%S").is_err());
+    // /// ```
+    // ///
+    // /// All parsed fields should be consistent to each other, otherwise it's an error.
+    // ///
+    // /// ```
+    // /// # use chrono::NaiveDateTime;
+    // /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    // /// let fmt = "%Y-%m-%d %H:%M:%S = UNIX timestamp %s";
+    // /// assert!(parse_from_str("2001-09-09 01:46:39 = UNIX timestamp 999999999", fmt).is_ok());
+    // /// assert!(parse_from_str("1970-01-01 00:00:00 = UNIX timestamp 1", fmt).is_err());
+    // /// ```
+    // ///
+    // /// Years before 1 BCE or after 9999 CE, require an initial sign
+    // ///
+    // ///```
+    // /// # use chrono::NaiveDateTime;
+    // /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    // /// let fmt = "%Y-%m-%d %H:%M:%S";
+    // /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
+    // /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
+    // /// ```
+    // pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
+    //     let mut parsed = Parsed::new();
+    //     parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+    //     parsed.to_naive_datetime_with_offset(0) // no offset adjustment
+    // }
+
+    // /// Parses a string with the specified format string and returns a new `NaiveDateTime`, and a
+    // /// slice with the remaining portion of the string.
+    // /// See the [`format::strftime` module](crate::format::strftime)
+    // /// on the supported escape sequences.
+    // ///
+    // /// Similar to [`parse_from_str`](#method.parse_from_str).
+    // ///
+    // /// # Example
+    // ///
+    // /// ```rust
+    // /// # use chrono::{NaiveDate, NaiveDateTime};
+    // /// let (datetime, remainder) = NaiveDateTime::parse_and_remainder(
+    // ///     "2015-02-18 23:16:09 trailing text",
+    // ///     "%Y-%m-%d %H:%M:%S",
+    // /// )
+    // /// .unwrap();
+    // /// assert_eq!(
+    // ///     datetime,
+    // ///     NaiveDate::from_ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap()
+    // /// );
+    // /// assert_eq!(remainder, " trailing text");
+    // /// ```
+    // pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
+    //     let mut parsed = Parsed::new();
+    //     let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+    //     parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
+    // }
+
+    // /// Adds given `FixedOffset` to the current datetime.
+    // /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    // ///
+    // /// This method is similar to [`checked_add_signed`](#method.checked_add_offset), but preserves
+    // /// leap seconds.
+    // #[must_use]
+    // pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+    //     let (time, days) = self.time.overflowing_add_offset(rhs);
+    //     let date = match days {
+    //         -1 => try_opt!(self.date.pred_opt()),
+    //         1 => try_opt!(self.date.succ_opt()),
+    //         _ => self.date,
+    //     };
+    //     Some(NaiveDateTime { date, time })
+    // }
+
+    // /// Subtracts given `FixedOffset` from the current datetime.
+    // /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    // ///
+    // /// This method is similar to [`checked_sub_signed`](#method.checked_sub_signed), but preserves
+    // /// leap seconds.
+    // pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+    //     let (time, days) = self.time.overflowing_sub_offset(rhs);
+    //     let date = match days {
+    //         -1 => try_opt!(self.date.pred_opt()),
+    //         1 => try_opt!(self.date.succ_opt()),
+    //         _ => self.date,
+    //     };
+    //     Some(NaiveDateTime { date, time })
+    // }
+
+    // /// Adds given `FixedOffset` to the current datetime.
+    // /// The resulting value may be outside the valid range of [`NaiveDateTime`].
+    // ///
+    // /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
+    // /// should not be exposed to library users.
+    // #[must_use]
+    // pub(crate) fn overflowing_add_offset(self, rhs: FixedOffset) -> NaiveDateTime {
+    //     let (time, days) = self.time.overflowing_add_offset(rhs);
+    //     let date = match days {
+    //         -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+    //         1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
+    //         _ => self.date,
+    //     };
+    //     NaiveDateTime { date, time }
+    // }
+
+    // /// Subtracts given `FixedOffset` from the current datetime.
+    // /// The resulting value may be outside the valid range of [`NaiveDateTime`].
+    // ///
+    // /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
+    // /// should not be exposed to library users.
+    // #[must_use]
+    // #[allow(unused)] // currently only used in `Local` but not on all platforms
+    // pub(crate) fn overflowing_sub_offset(self, rhs: FixedOffset) -> NaiveDateTime {
+    //     let (time, days) = self.time.overflowing_sub_offset(rhs);
+    //     let date = match days {
+    //         -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+    //         1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
+    //         _ => self.date,
+    //     };
+    //     NaiveDateTime { date, time }
+    // }
+
+
+
+ 
+
+    // /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
+    // ///
+    // /// Returns `None` if the resulting date would be out of range.
+    // #[must_use]
+    // pub const fn checked_add_days(self, days: Days) -> Option<Self> {
+    //     Some(Self { date: try_opt!(self.date.checked_add_days(days)), ..self })
+    // }
+
+    // /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
+    // ///
+    // /// Returns `None` if the resulting date would be out of range.
+    // #[must_use]
+    // pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
+    //     Some(Self { date: try_opt!(self.date.checked_sub_days(days)), ..self })
+    // }
+
+    // /// Subtracts another `NaiveDateTime` from the current date and time.
+    // /// This does not overflow or underflow at all.
+    // ///
+    // /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
+    // /// the subtraction assumes that **there is no leap second ever**,
+    // /// except when any of the `NaiveDateTime`s themselves represents a leap second
+    // /// in which case the assumption becomes that
+    // /// **there are exactly one (or two) leap second(s) ever**.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::{NaiveDate, TimeDelta};
+    // ///
+    // /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+    // ///
+    // /// let d = from_ymd(2016, 7, 8);
+    // /// assert_eq!(
+    // ///     d.and_hms_opt(3, 5, 7).unwrap().signed_duration_since(d.and_hms_opt(2, 4, 6).unwrap()),
+    // ///     TimeDelta::try_seconds(3600 + 60 + 1).unwrap()
+    // /// );
+    // ///
+    // /// // July 8 is 190th day in the year 2016
+    // /// let d0 = from_ymd(2016, 1, 1);
+    // /// assert_eq!(
+    // ///     d.and_hms_milli_opt(0, 7, 6, 500)
+    // ///         .unwrap()
+    // ///         .signed_duration_since(d0.and_hms_opt(0, 0, 0).unwrap()),
+    // ///     TimeDelta::try_seconds(189 * 86_400 + 7 * 60 + 6).unwrap()
+    // ///         + TimeDelta::try_milliseconds(500).unwrap()
+    // /// );
+    // /// ```
+    // ///
+    // /// Leap seconds are handled, but the subtraction assumes that
+    // /// there were no other leap seconds happened.
+    // ///
+    // /// ```
+    // /// # use chrono::{TimeDelta, NaiveDate};
+    // /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+    // /// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
+    // /// assert_eq!(
+    // ///     leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap()),
+    // ///     TimeDelta::try_seconds(3600).unwrap() + TimeDelta::try_milliseconds(500).unwrap()
+    // /// );
+    // /// assert_eq!(
+    // ///     from_ymd(2015, 7, 1).and_hms_opt(1, 0, 0).unwrap().signed_duration_since(leap),
+    // ///     TimeDelta::try_seconds(3600).unwrap() - TimeDelta::try_milliseconds(500).unwrap()
+    // /// );
+    // /// ```
+    // #[must_use]
+    // pub const fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
+    //     expect(
+    //         self.date
+    //             .signed_duration_since(rhs.date)
+    //             .checked_add(&self.time.signed_duration_since(rhs.time)),
+    //         "always in range",
+    //     )
+    // }
+
+    // /// Formats the combined date and time with the specified formatting items.
+    // /// Otherwise it is the same as the ordinary [`format`](#method.format) method.
+    // ///
+    // /// The `Iterator` of items should be `Clone`able,
+    // /// since the resulting `DelayedFormat` value may be formatted multiple times.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::format::strftime::StrftimeItems;
+    // /// use chrono::NaiveDate;
+    // ///
+    // /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S");
+    // /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    // /// assert_eq!(dt.format_with_items(fmt.clone()).to_string(), "2015-09-05 23:56:04");
+    // /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
+    // /// ```
+    // ///
+    // /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    // ///
+    // /// ```
+    // /// # use chrono::NaiveDate;
+    // /// # use chrono::format::strftime::StrftimeItems;
+    // /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
+    // /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    // /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
+    // /// ```
+    // #[cfg(feature = "alloc")]
+    // #[inline]
+    // #[must_use]
+    // pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    // where
+    //     I: Iterator<Item = B> + Clone,
+    //     B: Borrow<Item<'a>>,
+    // {
+    //     DelayedFormat::new(Some(self.date), Some(self.time), items)
+    // }
+
+    // /// Formats the combined date and time with the specified format string.
+    // /// See the [`format::strftime` module](crate::format::strftime)
+    // /// on the supported escape sequences.
+    // ///
+    // /// This returns a `DelayedFormat`,
+    // /// which gets converted to a string only when actual formatting happens.
+    // /// You may use the `to_string` method to get a `String`,
+    // /// or just feed it into `print!` and other formatting macros.
+    // /// (In this way it avoids the redundant memory allocation.)
+    // ///
+    // /// A wrong format string does *not* issue an error immediately.
+    // /// Rather, converting or formatting the `DelayedFormat` fails.
+    // /// You are recommended to immediately use `DelayedFormat` for this reason.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::NaiveDate;
+    // ///
+    // /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    // /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
+    // /// assert_eq!(dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
+    // /// ```
+    // ///
+    // /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    // ///
+    // /// ```
+    // /// # use chrono::NaiveDate;
+    // /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    // /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
+    // /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
+    // /// ```
+    // #[cfg(feature = "alloc")]
+    // #[inline]
+    // #[must_use]
+    // pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    //     self.format_with_items(StrftimeItems::new(fmt))
+    // }
+
+    // /// Converts the `NaiveDateTime` into a timezone-aware `DateTime<Tz>` with the provided
+    // /// time zone.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::{FixedOffset, NaiveDate};
+    // /// let hour = 3600;
+    // /// let tz = FixedOffset::east_opt(5 * hour).unwrap();
+    // /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5)
+    // ///     .unwrap()
+    // ///     .and_hms_opt(23, 56, 4)
+    // ///     .unwrap()
+    // ///     .and_local_timezone(tz)
+    // ///     .unwrap();
+    // /// assert_eq!(dt.timezone(), tz);
+    // /// ```
+    // #[must_use]
+    // pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
+    //     tz.from_local_datetime(self)
+    // }
+
+    // /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Utc>`.
+    // ///
+    // /// # Example
+    // ///
+    // /// ```
+    // /// use chrono::{NaiveDate, Utc};
+    // /// let dt =
+    // ///     NaiveDate::from_ymd_opt(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap().and_utc();
+    // /// assert_eq!(dt.timezone(), Utc);
+    // /// ```
+    // #[must_use]
+    // pub const fn and_utc(&self) -> DateTime<Utc> {
+    //     DateTime::from_naive_utc_and_offset(*self, Utc)
+    // }
+
+    
+
+// }
 
 impl From<NaiveDate> for NaiveDateTime {
     /// Converts a `NaiveDate` to a `NaiveDateTime` of the same date but at midnight.

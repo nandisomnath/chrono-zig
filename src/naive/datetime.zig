@@ -34,6 +34,8 @@
 
 const NaiveDate = @import("date.zig").NaiveDate;
 const NaiveTime = @import("time.zig").NaiveTime;
+const TimeDelta = @import("../time_delta.zig").TimeDelta;
+const Months = @import("../month.zig").Months;
 
 
 
@@ -117,6 +119,128 @@ pub const NaiveDateTime = struct {
     /// ```
     pub fn time(self: *Self) NaiveTime {
         return self.time;
+    }
+
+
+
+    /// Adds given `TimeDelta` to the current date and time.
+    ///
+    /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
+    /// the addition assumes that **there is no leap second ever**,
+    /// except when the `NaiveDateTime` itself represents a leap second
+    /// in which case the assumption becomes that **there is exactly a single leap second ever**.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, TimeDelta};
+    ///
+    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+    ///
+    /// let d = from_ymd(2016, 7, 8);
+    /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::zero()), Some(hms(3, 5, 7)));
+    /// assert_eq!(
+    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(1).unwrap()),
+    ///     Some(hms(3, 5, 8))
+    /// );
+    /// assert_eq!(
+    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(-1).unwrap()),
+    ///     Some(hms(3, 5, 6))
+    /// );
+    /// assert_eq!(
+    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(3600 + 60).unwrap()),
+    ///     Some(hms(4, 6, 7))
+    /// );
+    /// assert_eq!(
+    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(86_400).unwrap()),
+    ///     Some(from_ymd(2016, 7, 9).and_hms_opt(3, 5, 7).unwrap())
+    /// );
+    ///
+    /// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
+    /// assert_eq!(
+    ///     hmsm(3, 5, 7, 980).checked_add_signed(TimeDelta::try_milliseconds(450).unwrap()),
+    ///     Some(hmsm(3, 5, 8, 430))
+    /// );
+    /// ```
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// ```
+    /// # use chrono::{TimeDelta, NaiveDate};
+    /// # let hms = |h, m, s| NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(h, m, s).unwrap();
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
+    /// ```
+    ///
+    /// Leap seconds are handled,
+    /// but the addition assumes that it is the only leap second happened.
+    ///
+    /// ```
+    /// # use chrono::{TimeDelta, NaiveDate};
+    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
+    /// let leap = hmsm(3, 5, 59, 1_300);
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::zero()),
+    ///            Some(hmsm(3, 5, 59, 1_300)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(-500).unwrap()),
+    ///            Some(hmsm(3, 5, 59, 800)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(500).unwrap()),
+    ///            Some(hmsm(3, 5, 59, 1_800)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(800).unwrap()),
+    ///            Some(hmsm(3, 6, 0, 100)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_seconds(10).unwrap()),
+    ///            Some(hmsm(3, 6, 9, 300)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_seconds(-10).unwrap()),
+    ///            Some(hmsm(3, 5, 50, 300)));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_days(1).unwrap()),
+    ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
+    /// ```
+    pub fn checked_add_signed(self: *Self, rhs: TimeDelta) ?NaiveDateTime {
+        const __time, const remainder = self._time.overflowing_add_signed(rhs);
+        const _remainder = TimeDelta.try_seconds(remainder) catch return null;
+        const __date = self._date.checked_add_signed(_remainder) catch return null;
+        return NaiveDateTime { ._date = __date, ._time = __time };
+    }
+
+
+        /// Adds given `Months` to the current date and time.
+    ///
+    /// Uses the last day of the month if the day does not exist in the resulting month.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Months, NaiveDate};
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2014, 1, 1)
+    ///         .unwrap()
+    ///         .and_hms_opt(1, 0, 0)
+    ///         .unwrap()
+    ///         .checked_add_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap())
+    /// );
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2014, 1, 1)
+    ///         .unwrap()
+    ///         .and_hms_opt(1, 0, 0)
+    ///         .unwrap()
+    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
+    /// ```
+    pub fn checked_add_months(self: *Self, rhs: Months) ?NaiveDateTime {
+        const __date = self._date.checked_add_months(rhs) catch return null;
+        return NaiveDateTime { ._date = __date, ._time = self._time };
     }
 
 };
@@ -253,125 +377,8 @@ pub const NaiveDateTime = struct {
 
 
 
-    /// Adds given `TimeDelta` to the current date and time.
-    ///
-    /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-    /// the addition assumes that **there is no leap second ever**,
-    /// except when the `NaiveDateTime` itself represents a leap second
-    /// in which case the assumption becomes that **there is exactly a single leap second ever**.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, TimeDelta};
-    ///
-    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    ///
-    /// let d = from_ymd(2016, 7, 8);
-    /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::zero()), Some(hms(3, 5, 7)));
-    /// assert_eq!(
-    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(1).unwrap()),
-    ///     Some(hms(3, 5, 8))
-    /// );
-    /// assert_eq!(
-    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(-1).unwrap()),
-    ///     Some(hms(3, 5, 6))
-    /// );
-    /// assert_eq!(
-    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(3600 + 60).unwrap()),
-    ///     Some(hms(4, 6, 7))
-    /// );
-    /// assert_eq!(
-    ///     hms(3, 5, 7).checked_add_signed(TimeDelta::try_seconds(86_400).unwrap()),
-    ///     Some(from_ymd(2016, 7, 9).and_hms_opt(3, 5, 7).unwrap())
-    /// );
-    ///
-    /// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// assert_eq!(
-    ///     hmsm(3, 5, 7, 980).checked_add_signed(TimeDelta::try_milliseconds(450).unwrap()),
-    ///     Some(hmsm(3, 5, 8, 430))
-    /// );
-    /// ```
-    ///
-    /// Overflow returns `None`.
-    ///
-    /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
-    /// # let hms = |h, m, s| NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
-    /// ```
-    ///
-    /// Leap seconds are handled,
-    /// but the addition assumes that it is the only leap second happened.
-    ///
-    /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
-    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// let leap = hmsm(3, 5, 59, 1_300);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::zero()),
-    ///            Some(hmsm(3, 5, 59, 1_300)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(-500).unwrap()),
-    ///            Some(hmsm(3, 5, 59, 800)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(500).unwrap()),
-    ///            Some(hmsm(3, 5, 59, 1_800)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_milliseconds(800).unwrap()),
-    ///            Some(hmsm(3, 6, 0, 100)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_seconds(10).unwrap()),
-    ///            Some(hmsm(3, 6, 9, 300)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_seconds(-10).unwrap()),
-    ///            Some(hmsm(3, 5, 50, 300)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::try_days(1).unwrap()),
-    ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
-    /// ```
-    #[must_use]
-    pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
-        let (time, remainder) = self.time.overflowing_add_signed(rhs);
-        let remainder = try_opt!(TimeDelta::try_seconds(remainder));
-        let date = try_opt!(self.date.checked_add_signed(remainder));
-        Some(NaiveDateTime { date, time })
-    }
 
-    /// Adds given `Months` to the current date and time.
-    ///
-    /// Uses the last day of the month if the day does not exist in the resulting month.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Months, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1)
-    ///         .unwrap()
-    ///         .and_hms_opt(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_add_months(Months::new(1)),
-    ///     Some(NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap())
-    /// );
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1)
-    ///         .unwrap()
-    ///         .and_hms_opt(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
-    /// );
-    /// ```
-    #[must_use]
-    pub const fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(self.date.checked_add_months(rhs)), time: self.time })
-    }
+
 
     /// Adds given `FixedOffset` to the current datetime.
     /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
